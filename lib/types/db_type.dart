@@ -1,0 +1,1 @@
+enum DbType { postgres, mysql }

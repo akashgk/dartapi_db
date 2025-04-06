@@ -1,0 +1,18 @@
+name: dartapi_db
+description: A light weight Database helper wrapper for dartapi.
+version: 0.0.1
+repository: https://github.com/akashgk/dartapi_db
+homepage: https://github.com/akashgk/dartapi_db
+issue_tracker: https://github.com/akashgk/dartapi_db/issues
+
+environment:
+  sdk: ^3.7.2
+
+# Add regular dependencies here.
+dependencies:
+  postgres: ^2.6.2
+  mysql_client_plus:
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
