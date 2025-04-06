@@ -1,39 +1,67 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# DartAPI DB
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
+DartAPI DB is a lightweight and flexible database abstraction package for Dart that provides structured SQL database support using a unified API interface. It is designed to support multiple database drivers (currently PostgreSQL and MySQL) while maintaining clean architecture and SOLID principles.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
+## ✨ Features
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+- ✅ Common interface for all SQL databases
+- ✅ Easily extendable to support more databases
+- ✅ Clean structure following SOLID principles
+- ✅ Lightweight and fast
+- ✅ No ORM overhead
 
-## Features
+## 📦 Installation
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+Add the following to your `pubspec.yaml`:
 
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
-```dart
-const like = 'sample';
+```yaml
+dependencies:
+  dartapi_db: ^0.0.1
 ```
 
-## Additional information
+## 🔧 Supported Drivers
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+- PostgreSQL (`postgres`)
+- MySQL (`mysql_client_plus`)
+
+## 🚀 Getting Started
+
+### Example usage:
+
+```dart
+import 'package:dartapi_db/dartapi_db.dart';
+
+void main() async {
+  final db = await DatabaseFactory.create(
+    DbConfig(
+      type: DbType.postgres,
+      host: 'localhost',
+      port: 5432,
+      database: 'mydb',
+      username: 'postgres',
+      password: 'password',
+    ),
+  );
+
+  final result = await db.select('users', where: {'id': 1});
+  print(result.first);
+}
+```
+
+## 🧪 Testing
+
+To run the tests:
+
+```bash
+dart test
+```
+
+## 📁 Structure
+
+- `core/`: Base interface and result classes
+- `drivers/`: Implementations for PostgreSQL and MySQL
+- `types/`: Configuration and enums
+- `factory/`: Driver resolver
+
+## 📄 License
+This package is open-source and licensed under the **BSD-3-Clause License**.
