@@ -57,7 +57,7 @@ void main() {
     });
 
     tearDownAll(() async {
-      // await db.rawQuery('DROP TABLE IF EXISTS test_users;');
+      await db.rawQuery('DROP TABLE IF EXISTS test_users;');
       await db.close();
     });
   });
