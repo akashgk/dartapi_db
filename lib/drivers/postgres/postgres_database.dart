@@ -1,46 +1,48 @@
 import 'package:postgres/postgres.dart';
-
 import '../../core/sql_database.dart';
 import '../../core/db_result.dart';
 
-/// A concrete implementation of [SqlDatabase] for PostgreSQL.
+/// A PostgreSQL implementation of [SqlDatabase] using the `postgres` package.
 ///
-/// Uses the `postgres` package to interact with a PostgreSQL database
-/// and supports parameterized SQL queries with proper substitution.
-///
-/// All data manipulation methods (insert, update, delete) use `RETURNING *`
-/// to return the affected rows.
+/// This class allows you to perform standard SQL operations such as querying,
+/// inserting, updating, and deleting data in a PostgreSQL database using
+/// named parameters and Dart-friendly types.
 class PostgresDatabase extends SqlDatabase {
-  /// The underlying PostgreSQL connection instance.
-  late final PostgreSQLConnection _connection;
+  /// Internal PostgreSQL connection instance.
+  late final Connection _connection;
 
-  /// Creates a [PostgresDatabase] using the given [config].
+  /// Creates a [PostgresDatabase] with the provided [config] settings.
   PostgresDatabase(super.config);
 
-  /// Opens a connection to the PostgreSQL database.
+  /// Opens a connection to the PostgreSQL database using the configured endpoint.
+  ///
+  /// SSL is disabled by default. Modify [ConnectionSettings] if needed.
   @override
   Future<void> connect() async {
-    _connection = PostgreSQLConnection(
-      config.host,
-      config.port,
-      config.database,
-      username: config.username,
-      password: config.password,
+    _connection = await Connection.open(
+      Endpoint(
+        host: config.host,
+        database: config.database,
+        port: config.port,
+        username: config.username,
+        password: config.password,
+      ),
+      settings: ConnectionSettings(sslMode: SslMode.disable),
     );
-    await _connection.open();
   }
 
-  /// Closes the connection to the PostgreSQL database.
+  /// Closes the current PostgreSQL database connection.
   @override
   Future<void> close() async {
     await _connection.close();
   }
 
-  /// Executes a raw SQL query using PostgreSQL's named parameter syntax.
+  /// Executes a raw SQL query with optional named parameters.
   ///
-  /// - [query]: The SQL statement to execute.
-  /// - [values]: Optional named parameters (e.g., `@id`, `@name`).
-  /// Returns a [DbResult] with query results and execution time.
+  /// If [values] is non-empty, the query is parsed using [Sql.named].
+  /// Otherwise, a raw [Sql] query is executed.
+  ///
+  /// Returns a [DbResult] containing the resulting rows and query time.
   @override
   Future<DbResult> rawQuery(
     String query, {
@@ -48,13 +50,16 @@ class PostgresDatabase extends SqlDatabase {
   }) async {
     try {
       final stopwatch = Stopwatch()..start();
-      final result = await _connection.mappedResultsQuery(
-        query,
-        substitutionValues: values,
-      );
+
+      final result = values != null && values.isNotEmpty
+          ? await _connection.execute(Sql.named(query), parameters: values)
+          : await _connection.execute(Sql(query));
+
+      final rows = result.map((row) => row.toColumnMap()).toList();
 
       return DbResult(
-        rows: result.map((row) => row.values.first).toList(),
+        rows: rows,
+        affectedRows: rows.length,
         executionTime: stopwatch.elapsed,
       );
     } catch (e) {
@@ -62,9 +67,10 @@ class PostgresDatabase extends SqlDatabase {
     }
   }
 
-  /// Executes an INSERT query and returns the inserted row(s).
+  /// Inserts a new row into the specified [table] and returns the inserted data.
   ///
-  /// Uses parameterized query substitution and `RETURNING *`.
+  /// Automatically generates a parameterized query using the [data] keys.
+  /// Uses `RETURNING *` to fetch and return the inserted row(s).
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
     final columns = data.keys.join(', ');
@@ -73,10 +79,12 @@ class PostgresDatabase extends SqlDatabase {
     return rawQuery(query, values: data);
   }
 
-  /// Executes an UPDATE query and returns the updated row(s).
+  /// Updates matching rows in the [table] with the given [data].
   ///
-  /// [data] contains the columns to update.
-  /// [where] defines the filter conditions, with keys prefixed as `w_` internally.
+  /// The [where] clause is used to filter which rows are updated.
+  /// All keys in [where] are prefixed with `w_` to avoid naming collisions.
+  ///
+  /// Returns the updated row(s).
   @override
   Future<DbResult> update(
     String table,
@@ -95,9 +103,9 @@ class PostgresDatabase extends SqlDatabase {
     return rawQuery(query, values: values);
   }
 
-  /// Executes a DELETE query and returns the deleted row(s).
+  /// Deletes rows from the specified [table] based on the [where] clause.
   ///
-  /// [where] defines the filter conditions to identify rows to delete.
+  /// Returns the deleted row(s).
   @override
   Future<DbResult> delete(
     String table, {

@@ -15,7 +15,7 @@ void main() {
         host: 'localhost',
         port: 5432,
         database: 'dartapi_test',
-        username: 'postgres', // or the user you created
+        username: 'postgres',
         password: 'yourpassword',
       );
       db = await DatabaseFactory.create(config);
