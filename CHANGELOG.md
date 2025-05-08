@@ -1,3 +1,6 @@
+## 0.0.5
+- Upgrade Postgres to ^3.5.6 from ^2.6.2
+
 ## 0.0.4
 - Upgrade Postgres to ^3.5.6 from ^2.6.2
 

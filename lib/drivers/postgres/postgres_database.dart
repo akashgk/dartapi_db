@@ -51,9 +51,10 @@ class PostgresDatabase extends SqlDatabase {
     try {
       final stopwatch = Stopwatch()..start();
 
-      final result = values != null && values.isNotEmpty
-          ? await _connection.execute(Sql.named(query), parameters: values)
-          : await _connection.execute(Sql(query));
+      final result =
+          values != null && values.isNotEmpty
+              ? await _connection.execute(Sql.named(query), parameters: values)
+              : await _connection.execute(Sql(query));
 
       final rows = result.map((row) => row.toColumnMap()).toList();
 
