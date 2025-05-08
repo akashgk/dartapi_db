@@ -1,6 +1,6 @@
 name: dartapi_db
 description: A light weight Database helper wrapper for dartapi.
-version: 0.0.2
+version: 0.0.3
 repository: https://github.com/akashgk/dartapi_db
 homepage: https://github.com/akashgk/dartapi_db
 issue_tracker: https://github.com/akashgk/dartapi_db/issues

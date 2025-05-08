@@ -2,11 +2,22 @@ import '../types/db_config.dart';
 import 'dartapi_db_core.dart';
 import 'db_result.dart';
 
+/// An abstract base class for SQL-based database implementations.
+///
+/// This class provides shared implementations for common SQL operations like
+/// `insert`, `select`, `update`, and `delete`. Concrete subclasses are expected
+/// to implement the [rawQuery] method to execute the final query using the
+/// underlying database client.
 abstract class SqlDatabase implements DartApiDB {
+  /// Configuration settings for the database connection.
   final DbConfig config;
 
+  /// Creates a new SQL database instance with the provided [config].
   SqlDatabase(this.config);
 
+  /// Executes an INSERT query and returns the result.
+  ///
+  /// Automatically formats the columns and values as placeholders for parameterized execution.
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
     final columns = data.keys.join(', ');
@@ -15,6 +26,9 @@ abstract class SqlDatabase implements DartApiDB {
     return rawQuery(query, values: data);
   }
 
+  /// Executes a SELECT query with optional WHERE, LIMIT, and OFFSET clauses.
+  ///
+  /// Returns all matching rows from the specified [table].
   @override
   Future<DbResult> select(
     String table, {
@@ -39,6 +53,10 @@ abstract class SqlDatabase implements DartApiDB {
     return rawQuery(query, values: values);
   }
 
+  /// Executes an UPDATE query with a required WHERE clause.
+  ///
+  /// Updates values in the [table] where the [where] conditions are met.
+  /// Uses prefixed parameters (e.g., `@w_key`) to avoid naming conflicts.
   @override
   Future<DbResult> update(
     String table,
@@ -57,6 +75,9 @@ abstract class SqlDatabase implements DartApiDB {
     return rawQuery(query, values: values);
   }
 
+  /// Executes a DELETE query with a required WHERE clause.
+  ///
+  /// Deletes rows in the [table] that match the [where] conditions.
   @override
   Future<DbResult> delete(
     String table, {
@@ -67,6 +88,10 @@ abstract class SqlDatabase implements DartApiDB {
     return rawQuery(query, values: where);
   }
 
+  /// Executes a raw SQL query.
+  ///
+  /// This method must be implemented by the concrete subclass.
+  /// [values] can be used for named parameter substitution.
   @override
   Future<DbResult> rawQuery(String query, {Map<String, dynamic>? values});
 }

@@ -3,12 +3,21 @@ import '../../types/db_config.dart';
 import '../../core/dartapi_db_core.dart';
 import '../../core/db_result.dart';
 
+/// A concrete implementation of [DartApiDB] for MySQL databases.
+///
+/// Uses the `mysql_client_plus` package to interact with the database
+/// and supports parameterized queries, inserts, updates, and deletions.
 class MySqlDatabase implements DartApiDB {
+  /// Configuration for connecting to the MySQL database.
   final DbConfig config;
+
+  /// The underlying MySQL connection instance.
   late final MySQLConnection _connection;
 
+  /// Creates a new [MySqlDatabase] using the given [config].
   MySqlDatabase(this.config);
 
+  /// Opens the connection to the MySQL database.
   @override
   Future<void> connect() async {
     _connection = await MySQLConnection.createConnection(
@@ -21,11 +30,15 @@ class MySqlDatabase implements DartApiDB {
     await _connection.connect();
   }
 
+  /// Closes the connection to the MySQL database.
   @override
   Future<void> close() async {
     await _connection.close();
   }
 
+  /// Executes a raw SQL query using named parameter substitution.
+  ///
+  /// Returns a [DbResult] with the rows, affected row count, and insert ID.
   @override
   Future<DbResult> rawQuery(
     String query, {
@@ -39,6 +52,10 @@ class MySqlDatabase implements DartApiDB {
     );
   }
 
+  /// Executes an INSERT query into the specified [table].
+  ///
+  /// - [data]: A map of column names and values to insert.
+  /// Returns the inserted row metadata.
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
     final columns = data.keys.join(', ');
@@ -47,6 +64,10 @@ class MySqlDatabase implements DartApiDB {
     return rawQuery(query, values: data);
   }
 
+  /// Executes a SELECT query on the specified [table].
+  ///
+  /// - [where]: Optional filter criteria.
+  /// Returns all matching rows.
   @override
   Future<DbResult> select(String table, {Map<String, dynamic>? where}) async {
     var query = 'SELECT * FROM $table';
@@ -57,6 +78,11 @@ class MySqlDatabase implements DartApiDB {
     return rawQuery(query, values: where);
   }
 
+  /// Executes an UPDATE query on the specified [table].
+  ///
+  /// - [data]: Columns and values to update.
+  /// - [where]: Conditions to match rows that should be updated.
+  /// Returns the affected rows.
   @override
   Future<DbResult> update(
     String table,
@@ -69,6 +95,10 @@ class MySqlDatabase implements DartApiDB {
     return rawQuery(query, values: {...data, ...where});
   }
 
+  /// Executes a DELETE query on the specified [table].
+  ///
+  /// - [where]: Conditions to match rows that should be deleted.
+  /// Returns the affected rows.
   @override
   Future<DbResult> delete(
     String table, {

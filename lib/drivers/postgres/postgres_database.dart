@@ -3,11 +3,21 @@ import 'package:postgres/postgres.dart';
 import '../../core/sql_database.dart';
 import '../../core/db_result.dart';
 
+/// A concrete implementation of [SqlDatabase] for PostgreSQL.
+///
+/// Uses the `postgres` package to interact with a PostgreSQL database
+/// and supports parameterized SQL queries with proper substitution.
+///
+/// All data manipulation methods (insert, update, delete) use `RETURNING *`
+/// to return the affected rows.
 class PostgresDatabase extends SqlDatabase {
+  /// The underlying PostgreSQL connection instance.
   late final PostgreSQLConnection _connection;
 
+  /// Creates a [PostgresDatabase] using the given [config].
   PostgresDatabase(super.config);
 
+  /// Opens a connection to the PostgreSQL database.
   @override
   Future<void> connect() async {
     _connection = PostgreSQLConnection(
@@ -20,11 +30,17 @@ class PostgresDatabase extends SqlDatabase {
     await _connection.open();
   }
 
+  /// Closes the connection to the PostgreSQL database.
   @override
   Future<void> close() async {
     await _connection.close();
   }
 
+  /// Executes a raw SQL query using PostgreSQL's named parameter syntax.
+  ///
+  /// - [query]: The SQL statement to execute.
+  /// - [values]: Optional named parameters (e.g., `@id`, `@name`).
+  /// Returns a [DbResult] with query results and execution time.
   @override
   Future<DbResult> rawQuery(
     String query, {
@@ -46,6 +62,9 @@ class PostgresDatabase extends SqlDatabase {
     }
   }
 
+  /// Executes an INSERT query and returns the inserted row(s).
+  ///
+  /// Uses parameterized query substitution and `RETURNING *`.
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
     final columns = data.keys.join(', ');
@@ -54,6 +73,10 @@ class PostgresDatabase extends SqlDatabase {
     return rawQuery(query, values: data);
   }
 
+  /// Executes an UPDATE query and returns the updated row(s).
+  ///
+  /// [data] contains the columns to update.
+  /// [where] defines the filter conditions, with keys prefixed as `w_` internally.
   @override
   Future<DbResult> update(
     String table,
@@ -72,6 +95,9 @@ class PostgresDatabase extends SqlDatabase {
     return rawQuery(query, values: values);
   }
 
+  /// Executes a DELETE query and returns the deleted row(s).
+  ///
+  /// [where] defines the filter conditions to identify rows to delete.
   @override
   Future<DbResult> delete(
     String table, {
