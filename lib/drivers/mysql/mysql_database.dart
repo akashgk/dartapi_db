@@ -90,9 +90,10 @@ class MySqlDatabase implements DartApiDB {
     required Map<String, dynamic> where,
   }) async {
     final sets = data.keys.map((k) => '$k = :$k').join(', ');
-    final conditions = where.keys.map((k) => '$k = :$k').join(' AND ');
+    final conditions = where.keys.map((k) => '$k = :w_$k').join(' AND ');
     final query = 'UPDATE $table SET $sets WHERE $conditions;';
-    return rawQuery(query, values: {...data, ...where});
+    final whereParams = {for (var k in where.keys) 'w_$k': where[k]};
+    return rawQuery(query, values: {...data, ...whereParams});
   }
 
   /// Executes a DELETE query on the specified [table].
