@@ -1,48 +1,53 @@
 import 'package:postgres/postgres.dart';
 import '../../core/sql_database.dart';
 import '../../core/db_result.dart';
+import '../../types/pool_config.dart';
 
-/// A PostgreSQL implementation of [SqlDatabase] using the `postgres` package.
+/// A PostgreSQL implementation of [SqlDatabase] using a connection pool.
 ///
-/// This class allows you to perform standard SQL operations such as querying,
-/// inserting, updating, and deleting data in a PostgreSQL database using
-/// named parameters and Dart-friendly types.
+/// Uses the `postgres` package's [Pool] to manage multiple concurrent
+/// connections, eliminating single-connection bottlenecks under load.
 class PostgresDatabase extends SqlDatabase {
-  /// Internal PostgreSQL connection instance.
-  late final Connection _connection;
+  late final Pool _pool;
 
-  /// Creates a [PostgresDatabase] with the provided [config] settings.
   PostgresDatabase(super.config);
 
-  /// Opens a connection to the PostgreSQL database using the configured endpoint.
+  PoolConfig get _poolConfig => config.poolConfig ?? const PoolConfig();
+
+  /// Opens the connection pool to the PostgreSQL database.
   ///
-  /// SSL is disabled by default. Modify [ConnectionSettings] if needed.
+  /// The pool is lazy — physical connections are opened on first use.
   @override
   Future<void> connect() async {
-    _connection = await Connection.open(
-      Endpoint(
-        host: config.host,
-        database: config.database,
-        port: config.port,
-        username: config.username,
-        password: config.password,
+    _pool = Pool.withEndpoints(
+      [
+        Endpoint(
+          host: config.host,
+          database: config.database,
+          port: config.port,
+          username: config.username,
+          password: config.password,
+        ),
+      ],
+      settings: PoolSettings(
+        maxConnectionCount: _poolConfig.maxConnections,
+        connectTimeout: _poolConfig.connectionTimeout,
+        maxConnectionAge: _poolConfig.idleTimeout == Duration.zero
+            ? null
+            : _poolConfig.idleTimeout,
+        sslMode: SslMode.disable,
       ),
-      settings: ConnectionSettings(sslMode: SslMode.disable),
     );
   }
 
-  /// Closes the current PostgreSQL database connection.
+  /// Closes all connections in the pool.
   @override
-  Future<void> close() async {
-    await _connection.close();
-  }
+  Future<void> close() async => _pool.close();
 
   /// Executes a raw SQL query with optional named parameters.
   ///
+  /// Acquires a session from the pool for the duration of the query.
   /// If [values] is non-empty, the query is parsed using [Sql.named].
-  /// Otherwise, a raw [Sql] query is executed.
-  ///
-  /// Returns a [DbResult] containing the resulting rows and query time.
   @override
   Future<DbResult> rawQuery(
     String query, {
@@ -51,10 +56,9 @@ class PostgresDatabase extends SqlDatabase {
     try {
       final stopwatch = Stopwatch()..start();
 
-      final result =
-          values != null && values.isNotEmpty
-              ? await _connection.execute(Sql.named(query), parameters: values)
-              : await _connection.execute(Sql(query));
+      final result = values != null && values.isNotEmpty
+          ? await _pool.execute(Sql.named(query), parameters: values)
+          : await _pool.execute(Sql(query));
 
       final rows = result.map((row) => row.toColumnMap()).toList();
 
@@ -70,7 +74,6 @@ class PostgresDatabase extends SqlDatabase {
 
   /// Inserts a new row into the specified [table] and returns the inserted data.
   ///
-  /// Automatically generates a parameterized query using the [data] keys.
   /// Uses `RETURNING *` to fetch and return the inserted row(s).
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
@@ -82,9 +85,7 @@ class PostgresDatabase extends SqlDatabase {
 
   /// Updates matching rows in the [table] with the given [data].
   ///
-  /// The [where] clause is used to filter which rows are updated.
   /// All keys in [where] are prefixed with `w_` to avoid naming collisions.
-  ///
   /// Returns the updated row(s).
   @override
   Future<DbResult> update(

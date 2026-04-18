@@ -8,4 +8,5 @@ export 'drivers/mysql/mysql_database.dart';
 
 export 'types/db_config.dart';
 export 'types/db_type.dart';
+export 'types/pool_config.dart';
 export 'factory/database_factory.dart';

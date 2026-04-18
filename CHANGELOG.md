@@ -1,3 +1,8 @@
+## 0.0.7
+- Add connection pooling for PostgreSQL (via `Pool.withEndpoints`) and MySQL (via `MySQLConnectionPool`)
+- Add `PoolConfig` class with `maxConnections`, `minConnections`, `connectionTimeout`, and `idleTimeout`
+- Add optional `poolConfig` field to `DbConfig` — backward compatible, defaults to `PoolConfig()` when omitted
+
 ## 0.0.6
 - Fix `MySqlDatabase.update()` parameter collision when the same column appears in both SET and WHERE clauses (WHERE params now use `w_` prefix internally)
 

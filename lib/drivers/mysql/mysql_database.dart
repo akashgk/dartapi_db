@@ -1,40 +1,42 @@
 import 'package:mysql_client_plus/mysql_client_plus.dart';
 import '../../types/db_config.dart';
+import '../../types/pool_config.dart';
 import '../../core/dartapi_db_core.dart';
 import '../../core/db_result.dart';
 
 /// A concrete implementation of [DartApiDB] for MySQL databases.
 ///
-/// Uses the `mysql_client_plus` package to interact with the database
-/// and supports parameterized queries, inserts, updates, and deletions.
+/// Uses [MySQLConnectionPool] from `mysql_client_plus` to manage concurrent
+/// connections. [PoolConfig.minConnections] and [PoolConfig.idleTimeout] are
+/// not supported by the underlying pool and are silently ignored.
 class MySqlDatabase implements DartApiDB {
-  /// Configuration for connecting to the MySQL database.
   final DbConfig config;
+  late final MySQLConnectionPool _pool;
 
-  /// The underlying MySQL connection instance.
-  late final MySQLConnection _connection;
-
-  /// Creates a new [MySqlDatabase] using the given [config].
   MySqlDatabase(this.config);
 
-  /// Opens the connection to the MySQL database.
+  PoolConfig get _poolConfig => config.poolConfig ?? const PoolConfig();
+
+  /// Creates the MySQL connection pool.
+  ///
+  /// The pool is lazy — connections are opened on first use.
   @override
   Future<void> connect() async {
-    _connection = await MySQLConnection.createConnection(
+    _pool = MySQLConnectionPool(
       host: config.host,
       port: config.port,
       userName: config.username,
       password: config.password,
       databaseName: config.database,
+      maxConnections: _poolConfig.maxConnections,
+      secure: false,
+      timeoutMs: _poolConfig.connectionTimeout.inMilliseconds,
     );
-    await _connection.connect();
   }
 
-  /// Closes the connection to the MySQL database.
+  /// Closes all connections in the pool.
   @override
-  Future<void> close() async {
-    await _connection.close();
-  }
+  Future<void> close() async => _pool.close();
 
   /// Executes a raw SQL query using named parameter substitution.
   ///
@@ -44,7 +46,7 @@ class MySqlDatabase implements DartApiDB {
     String query, {
     Map<String, dynamic>? values,
   }) async {
-    final result = await _connection.execute(query, values ?? {});
+    final result = await _pool.execute(query, values ?? {});
     return DbResult(
       rows: result.rows.map((row) => row.assoc()).toList(),
       affectedRows: result.affectedRows.toInt(),
@@ -53,9 +55,6 @@ class MySqlDatabase implements DartApiDB {
   }
 
   /// Executes an INSERT query into the specified [table].
-  ///
-  /// - [data]: A map of column names and values to insert.
-  /// Returns the inserted row metadata.
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
     final columns = data.keys.join(', ');
@@ -65,9 +64,6 @@ class MySqlDatabase implements DartApiDB {
   }
 
   /// Executes a SELECT query on the specified [table].
-  ///
-  /// - [where]: Optional filter criteria.
-  /// Returns all matching rows.
   @override
   Future<DbResult> select(String table, {Map<String, dynamic>? where}) async {
     var query = 'SELECT * FROM $table';
@@ -80,9 +76,7 @@ class MySqlDatabase implements DartApiDB {
 
   /// Executes an UPDATE query on the specified [table].
   ///
-  /// - [data]: Columns and values to update.
-  /// - [where]: Conditions to match rows that should be updated.
-  /// Returns the affected rows.
+  /// Keys in [where] are prefixed with `w_` to avoid naming collisions.
   @override
   Future<DbResult> update(
     String table,
@@ -91,22 +85,23 @@ class MySqlDatabase implements DartApiDB {
   }) async {
     final sets = data.keys.map((k) => '$k = :$k').join(', ');
     final conditions = where.keys.map((k) => '$k = :w_$k').join(' AND ');
-    final query = 'UPDATE $table SET $sets WHERE $conditions;';
     final whereParams = {for (var k in where.keys) 'w_$k': where[k]};
-    return rawQuery(query, values: {...data, ...whereParams});
+    return rawQuery(
+      'UPDATE $table SET $sets WHERE $conditions;',
+      values: {...data, ...whereParams},
+    );
   }
 
   /// Executes a DELETE query on the specified [table].
-  ///
-  /// - [where]: Conditions to match rows that should be deleted.
-  /// Returns the affected rows.
   @override
   Future<DbResult> delete(
     String table, {
     required Map<String, dynamic> where,
   }) async {
     final conditions = where.keys.map((k) => '$k = :$k').join(' AND ');
-    final query = 'DELETE FROM $table WHERE $conditions;';
-    return rawQuery(query, values: where);
+    return rawQuery(
+      'DELETE FROM $table WHERE $conditions;',
+      values: where,
+    );
   }
 }

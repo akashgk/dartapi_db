@@ -1,4 +1,5 @@
 import 'db_type.dart';
+import 'pool_config.dart';
 
 class DbConfig {
   final DbType type;
@@ -8,6 +9,9 @@ class DbConfig {
   final String username;
   final String password;
 
+  /// Optional pool configuration. When null, drivers use [PoolConfig] defaults.
+  final PoolConfig? poolConfig;
+
   const DbConfig({
     required this.type,
     required this.host,
@@ -15,5 +19,6 @@ class DbConfig {
     required this.database,
     required this.username,
     required this.password,
+    this.poolConfig,
   });
 }
