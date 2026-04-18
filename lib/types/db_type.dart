@@ -1,1 +1,1 @@
-enum DbType { postgres, mysql }
+enum DbType { postgres, mysql, sqlite }

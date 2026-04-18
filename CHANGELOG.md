@@ -1,3 +1,15 @@
+## 0.0.8
+- Add `DbTransaction` abstract class for transaction-scoped query sessions
+- Add `DartApiDB.transaction<T>(callback)` — runs callback in a DB transaction; commits on success, rolls back on exception
+  - PostgreSQL: uses `Pool.runTx()` (native transaction session)
+  - MySQL: acquires a dedicated connection via `pool.withConnection()` with `START TRANSACTION` / `COMMIT` / `ROLLBACK`
+  - SQLite: uses `BEGIN` / `COMMIT` / `ROLLBACK` on the same connection
+- Add `SqliteDatabase` driver — full `DartApiDB` implementation backed by `sqlite3`
+- Add `DbType.sqlite` enum value
+- Add `DbConfig.sqlite(String path)` convenience constructor; use `':memory:'` for in-memory databases
+- Add `MigrationRunner` — Flyway-style SQL migration runner that tracks applied migrations in `_dartapi_migrations`
+- Add 19 tests for SQLite and MigrationRunner (no server required)
+
 ## 0.0.7
 - Add connection pooling for PostgreSQL (via `Pool.withEndpoints`) and MySQL (via `MySQLConnectionPool`)
 - Add `PoolConfig` class with `maxConnections`, `minConnections`, `connectionTimeout`, and `idleTimeout`

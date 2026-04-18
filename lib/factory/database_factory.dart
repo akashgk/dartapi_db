@@ -1,5 +1,6 @@
 import 'package:dartapi_db/drivers/mysql/mysql_database.dart';
 import 'package:dartapi_db/drivers/postgres/postgres_database.dart';
+import 'package:dartapi_db/drivers/sqlite/sqlite_database.dart';
 
 import '../core/dartapi_db_core.dart';
 import '../types/db_config.dart';
@@ -15,6 +16,7 @@ import '../types/db_type.dart';
 /// Currently supported:
 /// - PostgreSQL (`DbType.postgres`)
 /// - MySQL (`DbType.mysql`)
+/// - SQLite (`DbType.sqlite` / `DbConfig.sqlite(path)`)
 class DatabaseFactory {
   /// Private constructor to prevent instantiation.
   const DatabaseFactory._();
@@ -26,15 +28,15 @@ class DatabaseFactory {
   ///
   /// Throws [UnsupportedError] if the provided [DbType] is not supported.
   static Future<DartApiDB> create(DbConfig config) async {
-    late final DartApiDB db;
+    final DartApiDB db;
 
     switch (config.type) {
       case DbType.postgres:
         db = PostgresDatabase(config);
-        break;
       case DbType.mysql:
         db = MySqlDatabase(config);
-        break;
+      case DbType.sqlite:
+        db = SqliteDatabase(config);
     }
 
     await db.connect();

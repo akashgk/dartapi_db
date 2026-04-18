@@ -1,67 +1,142 @@
-# DartAPI DB
+# dartapi_db
 
-DartAPI DB is a lightweight and flexible database abstraction package for Dart that provides structured SQL database support using a unified API interface. It is designed to support multiple database drivers (currently PostgreSQL and MySQL) while maintaining clean architecture and SOLID principles.
+A lightweight database abstraction layer for DartAPI with support for PostgreSQL, MySQL, and SQLite. Provides a unified `DartApiDB` interface, connection pooling, transactions, and a SQL migration runner.
 
-## ✨ Features
+Part of the [DartAPI](https://pub.dev/packages/dartapi) ecosystem.
 
-- ✅ Common interface for all SQL databases
-- ✅ Easily extendable to support more databases
-- ✅ Clean structure following SOLID principles
-- ✅ Lightweight and fast
-- ✅ No ORM overhead
+---
 
-## 📦 Installation
-
-Add the following to your `pubspec.yaml`:
+## Installation
 
 ```yaml
 dependencies:
-  dartapi_db: ^0.0.1
+  dartapi_db: ^0.0.8
 ```
 
-## 🔧 Supported Drivers
+---
 
-- PostgreSQL (`postgres`)
-- MySQL (`mysql_client_plus`)
+## Supported Drivers
 
-## 🚀 Getting Started
+| Driver | `DbType` | Notes |
+|--------|----------|-------|
+| PostgreSQL | `DbType.postgres` | Connection pool via `postgres` package |
+| MySQL | `DbType.mysql` | Connection pool via `mysql_client_plus` |
+| SQLite | `DbType.sqlite` | Embedded, no server required; supports `:memory:` |
 
-### Example usage:
+---
+
+## Getting Started
 
 ```dart
 import 'package:dartapi_db/dartapi_db.dart';
 
-void main() async {
-  final db = await DatabaseFactory.create(
-    DbConfig(
-      type: DbType.postgres,
-      host: 'localhost',
-      port: 5432,
-      database: 'mydb',
-      username: 'postgres',
-      password: 'password',
-    ),
-  );
+// PostgreSQL
+final db = await DatabaseFactory.create(DbConfig(
+  type: DbType.postgres,
+  host: 'localhost', port: 5432,
+  database: 'mydb', username: 'postgres', password: 'secret',
+  poolConfig: PoolConfig(maxConnections: 10),
+));
 
-  final result = await db.select('users', where: {'id': 1});
-  print(result.first);
-}
+// SQLite (no server needed)
+final db = await DatabaseFactory.create(DbConfig.sqlite('app.db'));
+// or in-memory:
+final db = await DatabaseFactory.create(DbConfig.sqlite(':memory:'));
 ```
 
-## 🧪 Testing
+---
 
-To run the tests:
+## CRUD Operations
+
+```dart
+// Insert
+await db.insert('users', {'name': 'Alice', 'email': 'alice@example.com'});
+
+// Select
+final all = await db.select('users');
+final one = await db.select('users', where: {'id': 1});
+
+// Update
+await db.update('users', {'name': 'Alicia'}, where: {'id': 1});
+
+// Delete
+await db.delete('users', where: {'id': 1});
+
+// Raw SQL
+final result = await db.rawQuery(
+  'SELECT * FROM users WHERE age > @min',
+  values: {'min': 18},
+);
+```
+
+---
+
+## Transactions
+
+Wrap multiple operations in an atomic transaction. Automatically commits on success and rolls back on any exception.
+
+```dart
+final orderId = await db.transaction((tx) async {
+  final order = await tx.insert('orders', {'total': 99.99});
+  await tx.insert('order_items', {
+    'order_id': order.first!['id'],
+    'sku': 'ABC-001',
+  });
+  return order.first!['id'];
+});
+```
+
+---
+
+## Migrations
+
+Place numbered `.sql` files in a `migrations/` directory:
+
+```
+migrations/
+├── 0001_create_users.sql
+├── 0002_add_email_index.sql
+└── 0003_create_products.sql
+```
+
+Run pending migrations:
+
+```dart
+final runner = MigrationRunner(db);
+await runner.migrate();
+```
+
+Or from the CLI (inside your DartAPI project):
 
 ```bash
-dart test
+dartapi generate migration create_users_table   # creates next numbered .sql file
+dartapi db migrate                              # runs pending migrations
 ```
 
-## 📁 Structure
+Applied migrations are tracked in a `_dartapi_migrations` table. Re-running is safe — already-applied files are skipped.
 
-- `core/`: Base interface and result classes
-- `drivers/`: Implementations for PostgreSQL and MySQL
-- `types/`: Configuration and enums
-- `factory/`: Driver resolver
+---
 
-## 📄 License
-This package is open-source and licensed under the **BSD-3-Clause License**.
+## Connection Pooling
+
+```dart
+const config = DbConfig(
+  type: DbType.postgres,
+  // ...
+  poolConfig: PoolConfig(
+    maxConnections: 20,
+    minConnections: 2,
+    connectionTimeout: Duration(seconds: 30),
+    idleTimeout: Duration(minutes: 10),
+  ),
+);
+```
+
+---
+
+## Links
+
+- [dartapi CLI](https://pub.dev/packages/dartapi)
+- [dartapi_core](https://pub.dev/packages/dartapi_core)
+- [dartapi_auth](https://pub.dev/packages/dartapi_auth)
+- [GitHub](https://github.com/akashgk/dartapi_db)

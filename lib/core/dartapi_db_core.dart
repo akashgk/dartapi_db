@@ -1,4 +1,5 @@
 import 'db_result.dart';
+import 'db_transaction.dart';
 
 /// The core interface for database access in DartAPI.
 ///
@@ -48,4 +49,18 @@ abstract class DartApiDB {
   ///
   /// - [where]: Conditions to match rows (e.g., `{'id': 1}`).
   Future<DbResult> delete(String table, {required Map<String, dynamic> where});
+
+  /// Runs [callback] inside a database transaction.
+  ///
+  /// If [callback] throws, the transaction is rolled back automatically.
+  /// Returns whatever [callback] returns on success.
+  ///
+  /// ```dart
+  /// final orderId = await db.transaction((tx) async {
+  ///   final order = await tx.insert('orders', {'total': 99.99});
+  ///   await tx.insert('order_items', {'order_id': order.first!['id'], 'sku': 'ABC'});
+  ///   return order.first!['id'];
+  /// });
+  /// ```
+  Future<T> transaction<T>(Future<T> Function(DbTransaction tx) callback);
 }

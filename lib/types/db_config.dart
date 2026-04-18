@@ -21,4 +21,17 @@ class DbConfig {
     required this.password,
     this.poolConfig,
   });
+
+  /// Convenience constructor for SQLite databases.
+  ///
+  /// [databasePath] is the file path to the SQLite database (e.g. `'app.db'`).
+  /// Use `':memory:'` for an in-memory database.
+  const DbConfig.sqlite(String databasePath)
+      : type = DbType.sqlite,
+        host = '',
+        port = 0,
+        database = databasePath,
+        username = '',
+        password = '',
+        poolConfig = null;
 }
