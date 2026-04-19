@@ -1,8 +1,6 @@
 # dartapi_db
 
-A lightweight database abstraction layer for DartAPI with support for PostgreSQL, MySQL, and SQLite. Provides a unified `DartApiDB` interface, connection pooling, transactions, and a SQL migration runner.
-
-Part of the [DartAPI](https://pub.dev/packages/dartapi) ecosystem.
+A lightweight database abstraction layer for the [DartAPI](https://pub.dev/packages/dartapi) ecosystem. Provides a unified `DartApiDB` interface over PostgreSQL, MySQL, and SQLite with connection pooling, transactions, and a SQL migration runner.
 
 ---
 
@@ -25,7 +23,7 @@ dependencies:
 
 ---
 
-## Getting Started
+## Connecting
 
 ```dart
 import 'package:dartapi_db/dartapi_db.dart';
@@ -33,14 +31,28 @@ import 'package:dartapi_db/dartapi_db.dart';
 // PostgreSQL
 final db = await DatabaseFactory.create(DbConfig(
   type: DbType.postgres,
-  host: 'localhost', port: 5432,
-  database: 'mydb', username: 'postgres', password: 'secret',
+  host: 'localhost',
+  port: 5432,
+  database: 'mydb',
+  username: 'postgres',
+  password: 'secret',
   poolConfig: PoolConfig(maxConnections: 10),
 ));
 
-// SQLite (no server needed)
+// MySQL
+final db = await DatabaseFactory.create(DbConfig(
+  type: DbType.mysql,
+  host: 'localhost',
+  port: 3306,
+  database: 'mydb',
+  username: 'root',
+  password: 'secret',
+));
+
+// SQLite
 final db = await DatabaseFactory.create(DbConfig.sqlite('app.db'));
-// or in-memory:
+
+// SQLite in-memory (useful for tests)
 final db = await DatabaseFactory.create(DbConfig.sqlite(':memory:'));
 ```
 
@@ -52,9 +64,11 @@ final db = await DatabaseFactory.create(DbConfig.sqlite(':memory:'));
 // Insert
 await db.insert('users', {'name': 'Alice', 'email': 'alice@example.com'});
 
-// Select
-final all = await db.select('users');
-final one = await db.select('users', where: {'id': 1});
+// Select all
+final rows = await db.select('users');
+
+// Select with filter
+final row = await db.select('users', where: {'id': 1});
 
 // Update
 await db.update('users', {'name': 'Alicia'}, where: {'id': 1});
@@ -69,11 +83,13 @@ final result = await db.rawQuery(
 );
 ```
 
+`DbResult` exposes `.rows`, `.affectedRows`, `.insertId`, and `.executionTime`.
+
 ---
 
 ## Transactions
 
-Wrap multiple operations in an atomic transaction. Automatically commits on success and rolls back on any exception.
+Wrap multiple operations in an atomic transaction. The callback commits on success and rolls back automatically on any exception.
 
 ```dart
 final orderId = await db.transaction((tx) async {
@@ -99,18 +115,21 @@ migrations/
 └── 0003_create_products.sql
 ```
 
-Run pending migrations:
+Run pending migrations programmatically:
 
 ```dart
 final runner = MigrationRunner(db);
 await runner.migrate();
 ```
 
-Or from the CLI (inside your DartAPI project):
+Or from the CLI inside a DartAPI project:
 
 ```bash
-dartapi generate migration create_users_table   # creates next numbered .sql file
-dartapi db migrate                              # runs pending migrations
+# Create the next numbered migration file
+dartapi generate migration create_orders_table
+
+# Apply all pending migrations
+dartapi db migrate
 ```
 
 Applied migrations are tracked in a `_dartapi_migrations` table. Re-running is safe — already-applied files are skipped.
@@ -119,10 +138,16 @@ Applied migrations are tracked in a `_dartapi_migrations` table. Re-running is s
 
 ## Connection Pooling
 
+Configure pool behaviour via `PoolConfig` (PostgreSQL and MySQL):
+
 ```dart
 const config = DbConfig(
   type: DbType.postgres,
-  // ...
+  host: 'localhost',
+  port: 5432,
+  database: 'mydb',
+  username: 'postgres',
+  password: 'secret',
   poolConfig: PoolConfig(
     maxConnections: 20,
     minConnections: 2,
@@ -140,3 +165,9 @@ const config = DbConfig(
 - [dartapi_core](https://pub.dev/packages/dartapi_core)
 - [dartapi_auth](https://pub.dev/packages/dartapi_auth)
 - [GitHub](https://github.com/akashgk/dartapi_db)
+
+---
+
+## License
+
+BSD 3-Clause License © 2025 Akash G Krishnan
