@@ -1,3 +1,6 @@
+## 0.0.10
+- Add `test/mysql_query_builder_test.dart` — regression tests for Bug 1 (MySQL `update()` SET/WHERE parameter collision); validates that `w_` prefix correctly isolates WHERE params from SET params
+
 ## 0.0.9
 - Improve README: add MySQL connection example, improve clarity
 
