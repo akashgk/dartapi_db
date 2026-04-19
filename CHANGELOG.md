@@ -1,3 +1,6 @@
+## 0.0.9
+- Improve README: add MySQL connection example, improve clarity
+
 ## 0.0.8
 - Add `DbTransaction` abstract class for transaction-scoped query sessions
 - Add `DartApiDB.transaction<T>(callback)` — runs callback in a DB transaction; commits on success, rolls back on exception
