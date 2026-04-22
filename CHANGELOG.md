@@ -1,3 +1,15 @@
+## 0.0.11
+- Add `QueryBuilder` — fluent SELECT query builder returned by `db.query(table)`
+  - `.where(column, {equals, notEquals, greaterThan, lessThan, greaterThanOrEqual, lessThanOrEqual, like, whereIn, isNull, isNotNull})` — rich WHERE conditions (all AND-joined)
+  - `.select(columns)` — restrict to specific columns instead of `SELECT *`
+  - `.orderBy(column, {ascending})` — multi-column sorting
+  - `.limit(n)` / `.offset(n)` — offset-based pagination; SQLite emits `LIMIT -1 OFFSET n` automatically
+  - `.get()` → `Future<DbResult>` — all matching rows
+  - `.first()` → `Future<Map<String,dynamic>?>` — first row or null
+  - `.count()` → `Future<int>` — row count (ignores ORDER BY / LIMIT / OFFSET)
+- Add `DbParamStyle` enum (`named` / `colon` / `positional`) and `DartApiDB.paramStyle` getter — drivers declare their placeholder style; `QueryBuilder` generates correct SQL automatically for all three drivers
+- Add `DbQueryExtension` on `DartApiDB` — provides `db.query(table)` without circular imports
+
 ## 0.0.10
 - Add `test/mysql_query_builder_test.dart` — regression tests for Bug 1 (MySQL `update()` SET/WHERE parameter collision); validates that `w_` prefix correctly isolates WHERE params from SET params
 

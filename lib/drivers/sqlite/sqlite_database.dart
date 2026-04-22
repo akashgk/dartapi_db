@@ -25,6 +25,9 @@ class SqliteDatabase implements DartApiDB {
   SqliteDatabase(this.config);
 
   @override
+  DbParamStyle get paramStyle => DbParamStyle.positional;
+
+  @override
   Future<void> connect() async {
     _db = sqlite3.open(config.database);
   }

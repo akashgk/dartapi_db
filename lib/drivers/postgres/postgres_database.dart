@@ -1,4 +1,5 @@
 import 'package:postgres/postgres.dart';
+import '../../core/dartapi_db_core.dart';
 import '../../core/sql_database.dart';
 import '../../core/db_result.dart';
 import '../../core/db_transaction.dart';
@@ -40,6 +41,9 @@ class PostgresDatabase extends SqlDatabase {
       ),
     );
   }
+
+  @override
+  DbParamStyle get paramStyle => DbParamStyle.named;
 
   /// Closes all connections in the pool.
   @override

@@ -1,6 +1,18 @@
 import 'db_result.dart';
 import 'db_transaction.dart';
 
+/// SQL parameter placeholder style used by each driver.
+enum DbParamStyle {
+  /// Named `@param` placeholders — PostgreSQL.
+  named,
+
+  /// Named `:param` placeholders — MySQL.
+  colon,
+
+  /// Positional `?` placeholders — SQLite.
+  positional,
+}
+
 /// The core interface for database access in DartAPI.
 ///
 /// This abstract class defines a common API for SQL database interactions,
@@ -63,4 +75,9 @@ abstract class DartApiDB {
   /// });
   /// ```
   Future<T> transaction<T>(Future<T> Function(DbTransaction tx) callback);
+
+  /// The SQL parameter placeholder style used by this driver.
+  ///
+  /// Used internally by [QueryBuilder] to generate driver-compatible SQL.
+  DbParamStyle get paramStyle;
 }

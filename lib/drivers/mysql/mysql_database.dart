@@ -18,6 +18,9 @@ class MySqlDatabase implements DartApiDB {
 
   PoolConfig get _poolConfig => config.poolConfig ?? const PoolConfig();
 
+  @override
+  DbParamStyle get paramStyle => DbParamStyle.colon;
+
   /// Creates the MySQL connection pool.
   ///
   /// The pool is lazy — connections are opened on first use.
