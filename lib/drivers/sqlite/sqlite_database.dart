@@ -33,7 +33,7 @@ class SqliteDatabase implements DartApiDB {
   }
 
   @override
-  Future<void> close() async => _db.dispose();
+  Future<void> close() async => _db.close();
 
   @override
   Future<DbResult> rawQuery(

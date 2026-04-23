@@ -1,3 +1,8 @@
+## 0.0.12
+- Upgrade `sqlite3` from `^2.4.0` to `^3.3.1` — fixes deprecation warning (`dispose()` → `close()`)
+- Upgrade `mysql_client_plus` from `^0.0.31` to `^0.1.2`
+- Upgrade `lints` from `^5.0.0` to `^6.1.0`
+
 ## 0.0.11
 - Add `QueryBuilder` — fluent SELECT query builder returned by `db.query(table)`
   - `.where(column, {equals, notEquals, greaterThan, lessThan, greaterThanOrEqual, lessThanOrEqual, like, whereIn, isNull, isNotNull})` — rich WHERE conditions (all AND-joined)
