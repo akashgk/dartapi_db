@@ -8,7 +8,7 @@ A lightweight database abstraction layer for the [DartAPI](https://pub.dev/packa
 
 ```yaml
 dependencies:
-  dartapi_db: ^0.0.8
+  dartapi_db: ^0.0.12
 ```
 
 ---
@@ -163,7 +163,6 @@ const config = DbConfig(
 
 - [dartapi CLI](https://pub.dev/packages/dartapi)
 - [dartapi_core](https://pub.dev/packages/dartapi_core)
-- [dartapi_auth](https://pub.dev/packages/dartapi_auth)
 - [GitHub](https://github.com/akashgk/dartapi_db)
 
 ---
