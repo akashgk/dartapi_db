@@ -1,3 +1,15 @@
+## 0.0.13
+
+**Milestone 4 — MySQL `SqlDatabase` Consistency.**
+
+- `MySqlDatabase` now `extends SqlDatabase` instead of `implements DartApiDB` — `insert`, `select`, `update`, and `delete` are inherited; only `rawQuery`, `transaction`, `connect`, `close`, and `paramStyle` are MySQL-specific.
+- Add `SqlTransaction` abstract class (`lib/core/sql_transaction.dart`) — mirrors `SqlDatabase` for transaction-scoped operations. `_MySqlTxDB` and `_PostgresTxDB` both extend it, eliminating duplicated SQL-building in transaction callbacks.
+- Add `ph(String key)` method to `SqlDatabase` and `SqlTransaction` — returns `:key` for colon style (MySQL) or `@key` for named style (PostgreSQL), so all CRUD methods emit the correct placeholder automatically.
+- `PostgresDatabase` is updated to use `ph()` in its `RETURNING *` overrides; `_PostgresTxDB` inherits `select` from `SqlTransaction` (no longer duplicated).
+- No SQL-building logic is duplicated across drivers or transaction classes.
+- Add `test/mysql_consistency_test.dart` — 17 unit tests verifying MySQL inherits correct `:param` SQL from `SqlDatabase` via a stub that captures generated SQL without a live server.
+- Full suite: **78 tests passing**.
+
 ## 0.0.12
 - Upgrade `sqlite3` from `^2.4.0` to `^3.3.1` — fixes deprecation warning (`dispose()` → `close()`)
 - Upgrade `mysql_client_plus` from `^0.0.31` to `^0.1.2`

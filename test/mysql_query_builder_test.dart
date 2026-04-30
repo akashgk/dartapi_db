@@ -15,7 +15,10 @@ Map<String, dynamic> _buildUpdateParams(
   Map<String, dynamic> data,
   Map<String, dynamic> where,
 ) {
-  return {...data, ...{for (final k in where.keys) 'w_$k': where[k]}};
+  return {
+    ...data,
+    ...{for (final k in where.keys) 'w_$k': where[k]},
+  };
 }
 
 String _buildUpdateSql(
@@ -31,21 +34,26 @@ String _buildUpdateSql(
 void main() {
   group('MySQL update() parameter builder', () {
     test('SET and WHERE params have distinct keys for distinct columns', () {
-      final params = _buildUpdateParams({'name': 'Alice'}, {'email': 'a@a.com'});
+      final params = _buildUpdateParams(
+        {'name': 'Alice'},
+        {'email': 'a@a.com'},
+      );
       expect(params, containsPair('name', 'Alice'));
       expect(params, containsPair('w_email', 'a@a.com'));
       expect(params.length, equals(2));
     });
 
-    test(
-        'overlapping column names do not collide — '
+    test('overlapping column names do not collide — '
         'WHERE param is prefixed with w_', () {
       // Bug 1 regression: SET name = :name  WHERE name = :w_name
       final params = _buildUpdateParams({'name': 'Alice'}, {'name': 'Bob'});
       expect(params, containsPair('name', 'Alice'));
       expect(params, containsPair('w_name', 'Bob'));
-      expect(params.length, equals(2),
-          reason: 'Collision would produce length 1 and overwrite a value');
+      expect(
+        params.length,
+        equals(2),
+        reason: 'Collision would produce length 1 and overwrite a value',
+      );
     });
 
     test('generated SQL uses :name for SET and :w_name for WHERE', () {
@@ -73,7 +81,12 @@ void main() {
         {'title': 'Gadget', 'price': 9.99},
         {'id': 42},
       );
-      expect(sql, equals('UPDATE products SET title = :title, price = :price WHERE id = :w_id;'));
+      expect(
+        sql,
+        equals(
+          'UPDATE products SET title = :title, price = :price WHERE id = :w_id;',
+        ),
+      );
     });
 
     test('WHERE params preserve original values regardless of SET values', () {

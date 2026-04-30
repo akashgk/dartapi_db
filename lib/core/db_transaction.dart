@@ -25,8 +25,5 @@ abstract class DbTransaction {
     required Map<String, dynamic> where,
   });
 
-  Future<DbResult> delete(
-    String table, {
-    required Map<String, dynamic> where,
-  });
+  Future<DbResult> delete(String table, {required Map<String, dynamic> where});
 }

@@ -1,22 +1,15 @@
-import '../types/db_config.dart';
 import 'dartapi_db_core.dart';
 import 'db_result.dart';
+import 'db_transaction.dart';
 
-/// An abstract base class for SQL-based database implementations.
+/// An abstract base class for transaction-scoped SQL operations.
 ///
-/// Provides shared `insert`, `select`, `update`, and `delete` implementations
-/// that use [ph] to emit the correct parameter placeholder (`@key` for named
-/// style, `:key` for colon style). Subclasses implement [rawQuery] and declare
-/// their [paramStyle] — the SQL-building logic adapts automatically.
-abstract class SqlDatabase implements DartApiDB {
-  final DbConfig config;
+/// Mirrors the placeholder-aware SQL building of [SqlDatabase] but for use
+/// inside a [DbTransaction]. Subclasses implement [rawQuery] and declare
+/// their [paramStyle].
+abstract class SqlTransaction implements DbTransaction {
+  DbParamStyle get paramStyle;
 
-  SqlDatabase(this.config);
-
-  /// Returns the placeholder string for [key] based on [paramStyle].
-  ///
-  /// `@key` for [DbParamStyle.named] (PostgreSQL),
-  /// `:key` for [DbParamStyle.colon] (MySQL).
   String ph(String key) => paramStyle == DbParamStyle.colon ? ':$key' : '@$key';
 
   @override
@@ -30,15 +23,9 @@ abstract class SqlDatabase implements DartApiDB {
   }
 
   @override
-  Future<DbResult> select(
-    String table, {
-    Map<String, dynamic>? where,
-    int? limit,
-    int? offset,
-  }) async {
+  Future<DbResult> select(String table, {Map<String, dynamic>? where}) async {
     var query = 'SELECT * FROM $table';
     final params = <String, dynamic>{};
-
     if (where != null && where.isNotEmpty) {
       final conditions = where.entries
           .map((e) => '${e.key} = ${ph(e.key)}')
@@ -46,10 +33,6 @@ abstract class SqlDatabase implements DartApiDB {
       query += ' WHERE $conditions';
       params.addAll(where);
     }
-
-    if (limit != null) query += ' LIMIT $limit';
-    if (offset != null) query += ' OFFSET $offset';
-
     return rawQuery(query, values: params.isEmpty ? null : params);
   }
 
@@ -81,7 +64,4 @@ abstract class SqlDatabase implements DartApiDB {
     final conditions = where.keys.map((k) => '$k = ${ph(k)}').join(' AND ');
     return rawQuery('DELETE FROM $table WHERE $conditions;', values: where);
   }
-
-  @override
-  Future<DbResult> rawQuery(String query, {Map<String, dynamic>? values});
 }

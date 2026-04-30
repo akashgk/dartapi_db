@@ -123,9 +123,12 @@ class QueryBuilder {
     if (_conditions.isNotEmpty) {
       sql += ' WHERE ${_buildWhere(params)}';
     }
-    final result =
-        await _db.rawQuery(sql, values: params.isEmpty ? null : params);
-    final val = result.first?['_count'] ??
+    final result = await _db.rawQuery(
+      sql,
+      values: params.isEmpty ? null : params,
+    );
+    final val =
+        result.first?['_count'] ??
         result.first?['count(*)'] ??
         result.first?['COUNT(*)'];
     return switch (val) {

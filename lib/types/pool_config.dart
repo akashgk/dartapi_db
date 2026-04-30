@@ -22,7 +22,7 @@ class PoolConfig {
     this.connectionTimeout = const Duration(seconds: 30),
     this.idleTimeout = const Duration(minutes: 10),
   }) : assert(
-          minConnections <= maxConnections,
-          'minConnections must be <= maxConnections',
-        );
+         minConnections <= maxConnections,
+         'minConnections must be <= maxConnections',
+       );
 }

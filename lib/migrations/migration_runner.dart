@@ -95,12 +95,13 @@ class MigrationRunner {
       );
     }
 
-    final files = dir
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.sql'))
-        .toList()
-      ..sort((a, b) => _fileName(a).compareTo(_fileName(b)));
+    final files =
+        dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.sql'))
+            .toList()
+          ..sort((a, b) => _fileName(a).compareTo(_fileName(b)));
 
     return files.where((f) => !applied.contains(_fileName(f))).toList();
   }

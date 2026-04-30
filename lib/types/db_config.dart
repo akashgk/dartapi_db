@@ -27,11 +27,11 @@ class DbConfig {
   /// [databasePath] is the file path to the SQLite database (e.g. `'app.db'`).
   /// Use `':memory:'` for an in-memory database.
   const DbConfig.sqlite(String databasePath)
-      : type = DbType.sqlite,
-        host = '',
-        port = 0,
-        database = databasePath,
-        username = '',
-        password = '',
-        poolConfig = null;
+    : type = DbType.sqlite,
+      host = '',
+      port = 0,
+      database = databasePath,
+      username = '',
+      password = '',
+      poolConfig = null;
 }

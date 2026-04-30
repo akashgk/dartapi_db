@@ -39,8 +39,7 @@ class SqliteDatabase implements DartApiDB {
   Future<DbResult> rawQuery(
     String query, {
     Map<String, dynamic>? values,
-  }) async =>
-      _run(_db, query, values);
+  }) async => _run(_db, query, values);
 
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
@@ -105,14 +104,20 @@ class _SqliteTxDB implements DbTransaction {
   _SqliteTxDB(this._db);
 
   @override
-  Future<DbResult> rawQuery(String query, {Map<String, dynamic>? values}) async =>
-      _run(_db, query, values);
+  Future<DbResult> rawQuery(
+    String query, {
+    Map<String, dynamic>? values,
+  }) async => _run(_db, query, values);
 
   @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
     final columns = data.keys.join(', ');
     final placeholders = List.filled(data.length, '?').join(', ');
-    return _run(_db, 'INSERT INTO $table ($columns) VALUES ($placeholders);', data);
+    return _run(
+      _db,
+      'INSERT INTO $table ($columns) VALUES ($placeholders);',
+      data,
+    );
   }
 
   @override
@@ -132,7 +137,10 @@ class _SqliteTxDB implements DbTransaction {
   }) async {
     final sets = data.keys.map((k) => '$k = ?').join(', ');
     final cond = where.keys.map((k) => '$k = ?').join(' AND ');
-    return _run(_db, 'UPDATE $table SET $sets WHERE $cond;', {...data, ...where});
+    return _run(_db, 'UPDATE $table SET $sets WHERE $cond;', {
+      ...data,
+      ...where,
+    });
   }
 
   @override
@@ -151,7 +159,8 @@ class _SqliteTxDB implements DbTransaction {
 DbResult _run(Database db, String query, Map<String, dynamic>? values) {
   final params = values?.values.cast<Object?>().toList() ?? <Object?>[];
   final trimmed = query.trimLeft().toUpperCase();
-  final isQuery = trimmed.startsWith('SELECT') ||
+  final isQuery =
+      trimmed.startsWith('SELECT') ||
       trimmed.startsWith('PRAGMA') ||
       trimmed.startsWith('WITH');
 
