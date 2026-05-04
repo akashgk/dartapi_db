@@ -17,6 +17,11 @@ abstract class DbTransaction {
 
   Future<DbResult> insert(String table, Map<String, dynamic> data);
 
+  /// Inserts multiple [rows] into [table] in a single batch operation.
+  ///
+  /// All rows must share the same set of keys.
+  Future<DbResult> insertBatch(String table, List<Map<String, dynamic>> rows);
+
   Future<DbResult> select(String table, {Map<String, dynamic>? where});
 
   Future<DbResult> update(

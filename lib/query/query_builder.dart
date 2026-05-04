@@ -89,6 +89,14 @@ class QueryBuilder {
           'whereIn list must not be empty — an empty IN () clause is invalid SQL',
         );
       }
+      if (whereIn.length > 1000) {
+        // ignore: avoid_print
+        print(
+          '[dartapi_db] WARNING: whereIn on "$column" has ${whereIn.length} '
+          'values (>1000). Large IN clauses can degrade query performance — '
+          'consider a JOIN or a temporary table instead.',
+        );
+      }
       _conditions.add(_Condition(column, 'IN', whereIn));
     }
     return this;
@@ -126,7 +134,7 @@ class QueryBuilder {
   /// ORDER BY, LIMIT, and OFFSET are ignored.
   Future<int> count() async {
     final params = <String, dynamic>{};
-    var sql = 'SELECT COUNT(*) AS _count FROM $_table';
+    var sql = 'SELECT COUNT(*) AS _count FROM ${_q(_table)}';
     if (_conditions.isNotEmpty) {
       sql += ' WHERE ${_buildWhere(params)}';
     }
@@ -146,10 +154,16 @@ class QueryBuilder {
 
   // ── Internal builders ──────────────────────────────────────────────────────
 
+  /// Quotes [identifier] for the current driver.
+  ///
+  /// PostgreSQL/SQLite use `"identifier"`, MySQL uses `` `identifier` ``.
+  String _q(String identifier) =>
+      _style == DbParamStyle.colon ? '`$identifier`' : '"$identifier"';
+
   (String, Map<String, dynamic>?) _buildSelect() {
     final params = <String, dynamic>{};
-    final cols = _selectColumns?.join(', ') ?? '*';
-    var sql = 'SELECT $cols FROM $_table';
+    final cols = _selectColumns?.map(_q).join(', ') ?? '*';
+    var sql = 'SELECT $cols FROM ${_q(_table)}';
 
     if (_conditions.isNotEmpty) {
       sql += ' WHERE ${_buildWhere(params)}';
@@ -157,7 +171,7 @@ class QueryBuilder {
 
     if (_orderBys.isNotEmpty) {
       final order = _orderBys
-          .map((o) => '${o.column} ${o.ascending ? 'ASC' : 'DESC'}')
+          .map((o) => '${_q(o.column)} ${o.ascending ? 'ASC' : 'DESC'}')
           .join(', ');
       sql += ' ORDER BY $order';
     }
@@ -180,9 +194,9 @@ class QueryBuilder {
     for (final c in _conditions) {
       switch (c.op) {
         case 'IS NULL':
-          parts.add('${c.column} IS NULL');
+          parts.add('${_q(c.column)} IS NULL');
         case 'IS NOT NULL':
-          parts.add('${c.column} IS NOT NULL');
+          parts.add('${_q(c.column)} IS NOT NULL');
         case 'IN':
           final values = c.value as List<Object?>;
           if (_style == DbParamStyle.positional) {
@@ -190,7 +204,7 @@ class QueryBuilder {
               params['p${idx}_$i'] = values[i];
             }
             parts.add(
-              '${c.column} IN (${List.filled(values.length, '?').join(', ')})',
+              '${_q(c.column)} IN (${List.filled(values.length, '?').join(', ')})',
             );
           } else {
             final pfx = _style == DbParamStyle.named ? '@' : ':';
@@ -199,17 +213,17 @@ class QueryBuilder {
               params[keys[i]] = values[i];
             }
             parts.add(
-              '${c.column} IN (${keys.map((k) => '$pfx$k').join(', ')})',
+              '${_q(c.column)} IN (${keys.map((k) => '$pfx$k').join(', ')})',
             );
           }
         default:
           final key = 'p$idx';
           params[key] = c.value;
           if (_style == DbParamStyle.positional) {
-            parts.add('${c.column} ${c.op} ?');
+            parts.add('${_q(c.column)} ${c.op} ?');
           } else {
             final pfx = _style == DbParamStyle.named ? '@' : ':';
-            parts.add('${c.column} ${c.op} $pfx$key');
+            parts.add('${_q(c.column)} ${c.op} $pfx$key');
           }
       }
       idx++;

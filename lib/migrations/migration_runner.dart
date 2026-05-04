@@ -36,14 +36,32 @@ class MigrationRunner {
   ///
   /// Creates the `_dartapi_migrations` tracking table if it does not exist.
   /// Runs each unapplied `.sql` file inside a transaction and records it.
-  Future<void> migrate() async {
-    await _ensureMigrationsTable();
+  ///
+  /// When [dryRun] is `true`, pending migrations are printed but not applied —
+  /// useful for CI checks or previewing what `migrate()` would do:
+  ///
+  /// ```dart
+  /// await runner.migrate(dryRun: true);
+  /// // → [DRY RUN] Would apply: 0003_add_index.sql
+  /// ```
+  Future<void> migrate({bool dryRun = false}) async {
+    if (!dryRun) await _ensureMigrationsTable();
 
-    final applied = await _appliedMigrations();
+    final applied = dryRun ? <String>{} : await _appliedMigrations();
     final pending = await _pendingMigrations(applied);
 
     if (pending.isEmpty) {
-      print('✅ No pending migrations.');
+      print(dryRun
+          ? '[DRY RUN] No pending migrations.'
+          : '✅ No pending migrations.');
+      return;
+    }
+
+    if (dryRun) {
+      print('[DRY RUN] ${pending.length} pending migration(s):');
+      for (final file in pending) {
+        print('  • ${_fileName(file)}');
+      }
       return;
     }
 

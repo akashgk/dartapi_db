@@ -88,6 +88,30 @@ class SqliteDatabase implements DartApiDB {
   }
 
   @override
+  Future<DbResult> insertBatch(
+    String table,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    if (rows.isEmpty) return const DbResult(rows: [], affectedRows: 0);
+    final columns = rows.first.keys.toList();
+    final colList = columns.join(', ');
+    final placeholderRow =
+        '(${List.filled(columns.length, '?').join(', ')})';
+    final valueSets = List.filled(rows.length, placeholderRow);
+    // Flatten values in row-major order to match positional ? placeholders.
+    final params = <String, dynamic>{};
+    for (var i = 0; i < rows.length; i++) {
+      for (final col in columns) {
+        params['r${i}_$col'] = rows[i][col];
+      }
+    }
+    return rawQuery(
+      'INSERT INTO $table ($colList) VALUES ${valueSets.join(', ')};',
+      values: params,
+    );
+  }
+
+  @override
   Future<T> transaction<T>(
     Future<T> Function(DbTransaction tx) callback,
   ) async {
@@ -103,7 +127,7 @@ class SqliteDatabase implements DartApiDB {
   }
 }
 
-/// A [DbTransaction] backed by a [Database] inside an active transaction.
+/// Transaction-scoped SQLite operations backed by an active [Database].
 class _SqliteTxDB implements DbTransaction {
   final Database _db;
   _SqliteTxDB(this._db);
@@ -155,6 +179,30 @@ class _SqliteTxDB implements DbTransaction {
   }) async {
     final cond = where.keys.map((k) => '$k = ?').join(' AND ');
     return _run(_db, 'DELETE FROM $table WHERE $cond;', where);
+  }
+
+  @override
+  Future<DbResult> insertBatch(
+    String table,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    if (rows.isEmpty) return const DbResult(rows: [], affectedRows: 0);
+    final columns = rows.first.keys.toList();
+    final colList = columns.join(', ');
+    final placeholderRow =
+        '(${List.filled(columns.length, '?').join(', ')})';
+    final valueSets = List.filled(rows.length, placeholderRow);
+    final params = <String, dynamic>{};
+    for (var i = 0; i < rows.length; i++) {
+      for (final col in columns) {
+        params['r${i}_$col'] = rows[i][col];
+      }
+    }
+    return _run(
+      _db,
+      'INSERT INTO $table ($colList) VALUES ${valueSets.join(', ')};',
+      params,
+    );
   }
 }
 

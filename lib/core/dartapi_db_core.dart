@@ -62,6 +62,21 @@ abstract class DartApiDB {
   /// - [where]: Conditions to match rows (e.g., `{'id': 1}`).
   Future<DbResult> delete(String table, {required Map<String, dynamic> where});
 
+  /// Inserts multiple [rows] into [table] in a single batch operation.
+  ///
+  /// All rows must have the same set of keys. Returns a [DbResult] containing
+  /// the inserted rows (PostgreSQL returns them via `RETURNING *`; other
+  /// drivers return an empty rows list with [DbResult.affectedRows] set).
+  ///
+  /// ```dart
+  /// await db.insertBatch('products', [
+  ///   {'name': 'Widget', 'price': 9.99},
+  ///   {'name': 'Gadget', 'price': 19.99},
+  ///   {'name': 'Doohickey', 'price': 4.99},
+  /// ]);
+  /// ```
+  Future<DbResult> insertBatch(String table, List<Map<String, dynamic>> rows);
+
   /// Runs [callback] inside a database transaction.
   ///
   /// If [callback] throws, the transaction is rolled back automatically.

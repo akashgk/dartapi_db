@@ -115,6 +115,29 @@ class PostgresDatabase extends SqlDatabase {
   }
 
   @override
+  Future<DbResult> insertBatch(
+    String table,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    if (rows.isEmpty) return const DbResult(rows: [], affectedRows: 0);
+    final columns = rows.first.keys.toList();
+    final colList = columns.join(', ');
+    final valueSets = <String>[];
+    final params = <String, dynamic>{};
+    for (var i = 0; i < rows.length; i++) {
+      final keys = columns.map((c) => 'r${i}_$c').toList();
+      valueSets.add('(${keys.map(ph).join(', ')})');
+      for (final col in columns) {
+        params['r${i}_$col'] = rows[i][col];
+      }
+    }
+    return rawQuery(
+      'INSERT INTO $table ($colList) VALUES ${valueSets.join(', ')} RETURNING *;',
+      values: params,
+    );
+  }
+
+  @override
   Future<T> transaction<T>(Future<T> Function(DbTransaction tx) callback) =>
       _pool.runTx((session) => callback(_PostgresTxDB(session)));
 }
@@ -188,6 +211,29 @@ class _PostgresTxDB extends SqlTransaction {
     return rawQuery(
       'DELETE FROM $table WHERE $conditions RETURNING *;',
       values: where,
+    );
+  }
+
+  @override
+  Future<DbResult> insertBatch(
+    String table,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    if (rows.isEmpty) return const DbResult(rows: [], affectedRows: 0);
+    final columns = rows.first.keys.toList();
+    final colList = columns.join(', ');
+    final valueSets = <String>[];
+    final params = <String, dynamic>{};
+    for (var i = 0; i < rows.length; i++) {
+      final keys = columns.map((c) => 'r${i}_$c').toList();
+      valueSets.add('(${keys.map(ph).join(', ')})');
+      for (final col in columns) {
+        params['r${i}_$col'] = rows[i][col];
+      }
+    }
+    return rawQuery(
+      'INSERT INTO $table ($colList) VALUES ${valueSets.join(', ')} RETURNING *;',
+      values: params,
     );
   }
 }

@@ -37,4 +37,22 @@ class DbResult {
 
   /// Returns `true` if the result set is not empty.
   bool get isNotEmpty => rows.isNotEmpty;
+
+  /// Maps every row to [T] using [mapper] and returns the list.
+  ///
+  /// ```dart
+  /// final users = result.map((r) => User.fromJson(r));
+  /// ```
+  List<T> map<T>(T Function(Map<String, dynamic> row) mapper) =>
+      rows.map(mapper).toList();
+
+  /// Returns the first row mapped to [T], or `null` if the result is empty.
+  ///
+  /// ```dart
+  /// final user = result.firstAs(User.fromJson);
+  /// ```
+  T? firstAs<T>(T Function(Map<String, dynamic> row) mapper) {
+    final row = first;
+    return row != null ? mapper(row) : null;
+  }
 }

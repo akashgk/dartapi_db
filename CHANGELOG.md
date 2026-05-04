@@ -1,3 +1,14 @@
+## 0.0.15
+
+**New features.**
+
+- Add `DbResult.map<T>(mapper)` — maps every row to `T` using a mapper function, returning `List<T>`.
+- Add `DbResult.firstAs<T>(mapper)` — maps the first row to `T`, or returns `null` if the result is empty.
+- Add `DartApiDB.insertBatch(table, rows)` and `DbTransaction.insertBatch(table, rows)` — inserts multiple rows in a single `INSERT ... VALUES (...), (...)` statement. PostgreSQL returns inserted rows via `RETURNING *`; MySQL and SQLite set `affectedRows`. Empty list is a no-op.
+- Add identifier quoting to `QueryBuilder` — table names and column names are now quoted correctly for each driver (`"identifier"` for PostgreSQL/SQLite, `` `identifier` `` for MySQL), preventing conflicts with reserved keywords.
+- Add runtime warning when `whereIn` list exceeds 1 000 items — large `IN` clauses degrade performance; the warning suggests using a JOIN or temporary table instead.
+- Add `dryRun` parameter to `MigrationRunner.migrate()` — prints pending migrations without applying them. Useful for CI checks and deploy previews.
+
 ## 0.0.14
 
 **Bug fixes.**
