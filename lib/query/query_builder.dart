@@ -82,6 +82,13 @@ class QueryBuilder {
     } else if (like != null) {
       _conditions.add(_Condition(column, 'LIKE', like));
     } else if (whereIn != null) {
+      if (whereIn.isEmpty) {
+        throw ArgumentError.value(
+          whereIn,
+          'whereIn',
+          'whereIn list must not be empty — an empty IN () clause is invalid SQL',
+        );
+      }
       _conditions.add(_Condition(column, 'IN', whereIn));
     }
     return this;

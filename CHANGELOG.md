@@ -1,3 +1,12 @@
+## 0.0.14
+
+**Bug fixes.**
+
+- Fix `MySqlDatabase.rawQuery` and `_MySqlTxDB.rawQuery` — `DbResult.executionTime` is now populated for MySQL queries and transactions, consistent with PostgreSQL and SQLite.
+- Fix `SqliteDatabase.update` and `_SqliteTxDB.update` — WHERE-clause values are now stored under prefixed keys (`w_<col>`) in the positional params map, matching the PostgreSQL driver. Previously, when a column appeared in both `data` and `where` (e.g. updating `name` WHERE `name = old`), the map collapsed to a single entry and the second positional `?` was bound incorrectly, causing silent data corruption.
+- Fix `QueryBuilder.where(whereIn:)` — throws `ArgumentError` immediately when an empty list is passed instead of silently generating invalid SQL `IN ()` that fails at the database level.
+- Dependency upgrades: `test` 1.31.0 → 1.31.1, `test_api` 0.7.11 → 0.7.12, `test_core` 0.6.17 → 0.6.18, `matcher` 0.12.19 → 0.12.20, `analyzer` 12.1.0 → 13.0.0, `vm_service` 15.1.0 → 15.2.0.
+
 ## 0.0.13
 
 **Milestone 4 — MySQL `SqlDatabase` Consistency.**

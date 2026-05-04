@@ -46,11 +46,13 @@ class MySqlDatabase extends SqlDatabase {
     String query, {
     Map<String, dynamic>? values,
   }) async {
+    final stopwatch = Stopwatch()..start();
     final result = await _pool.execute(query, values ?? {});
     return DbResult(
       rows: result.rows.map((row) => row.assoc()).toList(),
       affectedRows: result.affectedRows.toInt(),
       insertId: result.lastInsertID,
+      executionTime: stopwatch.elapsed,
     );
   }
 
@@ -89,11 +91,13 @@ class _MySqlTxDB extends SqlTransaction {
     String query, {
     Map<String, dynamic>? values,
   }) async {
+    final stopwatch = Stopwatch()..start();
     final result = await _conn.execute(query, values ?? {});
     return DbResult(
       rows: result.rows.map((row) => row.assoc()).toList(),
       affectedRows: result.affectedRows.toInt(),
       insertId: result.lastInsertID,
+      executionTime: stopwatch.elapsed,
     );
   }
 }

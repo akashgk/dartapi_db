@@ -69,7 +69,12 @@ class SqliteDatabase implements DartApiDB {
   }) async {
     final sets = data.keys.map((k) => '$k = ?').join(', ');
     final cond = where.keys.map((k) => '$k = ?').join(' AND ');
-    final values = {...data, ...where}; // SET values first, WHERE values after
+    // Use w_ prefix on where keys to avoid collision with data keys when
+    // updating a column that also appears in the WHERE clause.
+    final values = {
+      ...data,
+      ...{for (final e in where.entries) 'w_${e.key}': e.value},
+    };
     return _run(_db, 'UPDATE $table SET $sets WHERE $cond;', values);
   }
 
@@ -139,7 +144,7 @@ class _SqliteTxDB implements DbTransaction {
     final cond = where.keys.map((k) => '$k = ?').join(' AND ');
     return _run(_db, 'UPDATE $table SET $sets WHERE $cond;', {
       ...data,
-      ...where,
+      ...{for (final e in where.entries) 'w_${e.key}': e.value},
     });
   }
 
