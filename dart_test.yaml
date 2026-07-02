@@ -1,0 +1,16 @@
+# Tests tagged `integration` need a live database:
+#
+#   docker compose up -d
+#   dart test -P integration
+#
+# A plain `dart test` skips them, so the suite is always green on a machine
+# without Postgres/MySQL.
+tags:
+  integration:
+    skip: 'Needs a live database — docker compose up -d && dart test -P integration'
+
+presets:
+  integration:
+    tags:
+      integration:
+        skip: false

@@ -91,6 +91,18 @@ abstract class DartApiDB {
   /// ```
   Future<T> transaction<T>(Future<T> Function(DbTransaction tx) callback);
 
+  /// Returns `true` when the database answers a trivial query within
+  /// [timeout], `false` otherwise — never throws.
+  ///
+  /// Designed for health checks:
+  ///
+  /// ```dart
+  /// app.enableHealthCheck(checks: [
+  ///   () async => HealthCheckResult(name: 'database', healthy: await db.ping()),
+  /// ]);
+  /// ```
+  Future<bool> ping({Duration timeout = const Duration(seconds: 2)});
+
   /// The SQL parameter placeholder style used by this driver.
   ///
   /// Used internally by [QueryBuilder] to generate driver-compatible SQL.

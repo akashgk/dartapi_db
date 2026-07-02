@@ -40,8 +40,7 @@ void main() {
     });
 
     test('select restricts to specified columns', () async {
-      final result =
-          await db.query('users').select(['name']).get();
+      final result = await db.query('users').select(['name']).get();
       for (final row in result.rows) {
         expect(row.containsKey('name'), isTrue);
         expect(row.containsKey('email'), isFalse);
@@ -49,8 +48,7 @@ void main() {
     });
 
     test('orderBy uses quoted column', () async {
-      final result =
-          await db.query('users').orderBy('name').get();
+      final result = await db.query('users').orderBy('name').get();
       final names = result.rows.map((r) => r['name']).toList();
       expect(names, equals(['Alice', 'Bob']));
     });

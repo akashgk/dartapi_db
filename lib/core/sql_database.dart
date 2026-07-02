@@ -106,5 +106,15 @@ abstract class SqlDatabase implements DartApiDB {
   }
 
   @override
+  Future<bool> ping({Duration timeout = const Duration(seconds: 2)}) async {
+    try {
+      await rawQuery('SELECT 1;').timeout(timeout);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
   Future<DbResult> rawQuery(String query, {Map<String, dynamic>? values});
 }

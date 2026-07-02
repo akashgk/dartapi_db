@@ -55,7 +55,7 @@ void main() {
     });
   });
 
-  group('Postgres Integration Test', () {
+  group('Postgres Integration Test', tags: 'integration', () {
     late DartApiDB db;
     int? insertedId;
 
@@ -112,7 +112,7 @@ void main() {
     });
   });
 
-  group('Postgres Pool Integration Test', () {
+  group('Postgres Pool Integration Test', tags: 'integration', () {
     late DartApiDB db;
 
     setUpAll(() async {

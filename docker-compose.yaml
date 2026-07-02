@@ -1,0 +1,33 @@
+# Local databases for the integration test suite:
+#
+#   docker compose up -d
+#   dart test -P integration
+#
+# Credentials intentionally match test/dartapi_db_test.dart.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: dartapi_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: yourpassword
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: dartapi_test
+      MYSQL_ROOT_PASSWORD: yourpassword
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-pyourpassword']
+      interval: 2s
+      timeout: 2s
+      retries: 15

@@ -92,7 +92,10 @@ void main() {
     });
 
     test('firstAs returns null on empty result', () async {
-      final result = await db.select('products', where: {'name': 'nonexistent'});
+      final result = await db.select(
+        'products',
+        where: {'name': 'nonexistent'},
+      );
       expect(result.firstAs((r) => r['name']), isNull);
     });
   });

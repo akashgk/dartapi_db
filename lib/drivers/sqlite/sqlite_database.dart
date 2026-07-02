@@ -42,6 +42,16 @@ class SqliteDatabase implements DartApiDB {
   }) async => _run(_db, query, values);
 
   @override
+  Future<bool> ping({Duration timeout = const Duration(seconds: 2)}) async {
+    try {
+      await rawQuery('SELECT 1;').timeout(timeout);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
   Future<DbResult> insert(String table, Map<String, dynamic> data) async {
     final columns = data.keys.join(', ');
     final placeholders = List.filled(data.length, '?').join(', ');
@@ -95,8 +105,7 @@ class SqliteDatabase implements DartApiDB {
     if (rows.isEmpty) return const DbResult(rows: [], affectedRows: 0);
     final columns = rows.first.keys.toList();
     final colList = columns.join(', ');
-    final placeholderRow =
-        '(${List.filled(columns.length, '?').join(', ')})';
+    final placeholderRow = '(${List.filled(columns.length, '?').join(', ')})';
     final valueSets = List.filled(rows.length, placeholderRow);
     // Flatten values in row-major order to match positional ? placeholders.
     final params = <String, dynamic>{};
@@ -189,8 +198,7 @@ class _SqliteTxDB implements DbTransaction {
     if (rows.isEmpty) return const DbResult(rows: [], affectedRows: 0);
     final columns = rows.first.keys.toList();
     final colList = columns.join(', ');
-    final placeholderRow =
-        '(${List.filled(columns.length, '?').join(', ')})';
+    final placeholderRow = '(${List.filled(columns.length, '?').join(', ')})';
     final valueSets = List.filled(rows.length, placeholderRow);
     final params = <String, dynamic>{};
     for (var i = 0; i < rows.length; i++) {

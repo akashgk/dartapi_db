@@ -1,3 +1,22 @@
+## 0.1.0
+
+**Health checks and a test suite that is green without a database.**
+
+### New features
+
+- Add `DartApiDB.ping({timeout})` — `true` when the database answers `SELECT 1`
+  within the timeout (default 2 s), `false` otherwise; never throws.
+  Implemented by all three drivers and designed to plug straight into
+  `dartapi_core`'s `enableHealthCheck(checks: [...])`.
+
+### Testing / tooling
+
+- Postgres integration tests are tagged `integration` and **skipped by
+  default** — a plain `dart test` is green on any machine. Run them with
+  `docker compose up -d && dart test -P integration`.
+- Add `docker-compose.yaml` (Postgres 16 + MySQL 8 with healthchecks) whose
+  credentials match the integration suite.
+
 ## 0.0.15
 
 **New features.**

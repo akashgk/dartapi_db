@@ -8,7 +8,7 @@ A lightweight database abstraction layer for the [DartAPI](https://pub.dev/packa
 
 ```yaml
 dependencies:
-  dartapi_db: ^0.0.12
+  dartapi_db: ^0.1.0
 ```
 
 ---
@@ -155,6 +155,30 @@ const config = DbConfig(
     idleTimeout: Duration(minutes: 10),
   ),
 );
+```
+
+---
+
+## Health Checks
+
+`db.ping()` answers `true` when the database responds to `SELECT 1` within
+the timeout (default 2 s) and `false` otherwise — it never throws, so it is
+safe to call from a health endpoint:
+
+```dart
+app.enableHealthCheck(checks: [
+  () async => HealthCheckResult(name: 'database', healthy: await db.ping()),
+]);
+```
+
+---
+
+## Running the Tests
+
+```bash
+dart test                    # unit tests only — no database needed
+docker compose up -d         # start Postgres + MySQL
+dart test -P integration     # integration tests against live databases
 ```
 
 ---

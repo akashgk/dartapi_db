@@ -51,9 +51,11 @@ class MigrationRunner {
     final pending = await _pendingMigrations(applied);
 
     if (pending.isEmpty) {
-      print(dryRun
-          ? '[DRY RUN] No pending migrations.'
-          : '✅ No pending migrations.');
+      print(
+        dryRun
+            ? '[DRY RUN] No pending migrations.'
+            : '✅ No pending migrations.',
+      );
       return;
     }
 
