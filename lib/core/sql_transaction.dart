@@ -8,6 +8,7 @@ import 'db_transaction.dart';
 /// inside a [DbTransaction]. Subclasses implement [rawQuery] and declare
 /// their [paramStyle].
 abstract class SqlTransaction implements DbTransaction {
+  @override
   DbParamStyle get paramStyle;
 
   String ph(String key) => paramStyle == DbParamStyle.colon ? ':$key' : '@$key';

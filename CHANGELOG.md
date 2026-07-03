@@ -1,3 +1,48 @@
+## 0.2.0
+
+**DX overhaul — one line to connect, typed errors, one call to paginate.**
+
+### Fixed (production blockers)
+
+- **Cloud databases were unreachable.** The PostgreSQL pool hardcoded
+  `SslMode.disable` and MySQL hardcoded `secure: false` — connections to
+  Neon, Supabase, RDS, PlanetScale, etc. were impossible. New
+  `DbConfig.useSsl` (default `false`) wires TLS through both drivers.
+
+### New features
+
+- **Typed exceptions.** Every driver error now surfaces as a `DbException`
+  subclass instead of `Exception('… query failed')`:
+  `UniqueViolationException` (PG SQLSTATE 23505, MySQL 1062, SQLite
+  2067/1555), `ForeignKeyViolationException` (23503 / 1451-1452 / 787),
+  `DbConnectionException`, `QueryException`. The original driver exception
+  is preserved as `cause`. Map them straight to HTTP statuses:
+  ```dart
+  try { await db.insert('users', data); }
+  on UniqueViolationException { throw ApiException(409, 'Email already registered'); }
+  ```
+- **`DatabaseFactory.fromUrl` / `DbConfig.fromUrl`** — pass `DATABASE_URL`
+  straight through: `postgres://user:pass@host:5432/db?sslmode=require`,
+  `mysql://…`, `sqlite:app.db`, `sqlite::memory:`. Credentials are
+  URL-decoded; default ports applied.
+- **`paginate()`** on the query builder — one call runs `COUNT(*)` +
+  `LIMIT/OFFSET` and returns a `DbPage` (`rows`, `total`, `totalPages`,
+  `hasNext`, `hasPrev`, `map<T>()`), designed to plug into `dartapi_core`'s
+  `PaginatedResponse`.
+- **`exists()`** on the query builder.
+- **Query builder inside transactions.** New `QueryExecutor` interface
+  (implemented by both `DartApiDB` and `DbTransaction`) — `tx.query('users')`
+  now works inside `db.transaction(...)`.
+- `DartApiDB.select` gained `limit`/`offset` parameters (previously only
+  half-implemented and hidden from the interface).
+
+### Breaking
+
+- Custom `DbTransaction` implementations must now expose `paramStyle`
+  (inherited automatically when extending `SqlTransaction`).
+- Code that matched on the old `Exception('PostgreSQL query failed: …')`
+  strings should switch to the typed exceptions.
+
 ## 0.1.1
 
 - Raise dependency floors to the current latest releases:

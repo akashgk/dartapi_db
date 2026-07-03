@@ -1,8 +1,9 @@
 import 'dartapi_db_core.dart';
 import '../query/query_builder.dart';
 
-/// Adds [query] to every [DartApiDB] implementation.
-extension DbQueryExtension on DartApiDB {
+/// Adds [query] to every [QueryExecutor] — both [DartApiDB] connections
+/// and [DbTransaction] sessions inside `db.transaction(...)`.
+extension DbQueryExtension on QueryExecutor {
   /// Returns a [QueryBuilder] targeting [table].
   ///
   /// ```dart

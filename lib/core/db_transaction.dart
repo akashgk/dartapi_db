@@ -1,10 +1,12 @@
+import 'dartapi_db_core.dart';
 import 'db_result.dart';
 
 /// A database transaction session.
 ///
 /// Provides the same query methods as [DartApiDB] without the lifecycle
 /// methods (`connect`, `close`). Passed to the callback in
-/// [DartApiDB.transaction].
+/// [DartApiDB.transaction]. Implements [QueryExecutor], so the fluent
+/// builder works inside transactions too: `tx.query('users')...`.
 ///
 /// ```dart
 /// await db.transaction((tx) async {
@@ -12,7 +14,8 @@ import 'db_result.dart';
 ///   await tx.insert('order_items', itemData);
 /// });
 /// ```
-abstract class DbTransaction {
+abstract class DbTransaction implements QueryExecutor {
+  @override
   Future<DbResult> rawQuery(String query, {Map<String, dynamic>? values});
 
   Future<DbResult> insert(String table, Map<String, dynamic> data);

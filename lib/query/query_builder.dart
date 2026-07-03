@@ -1,5 +1,6 @@
 import '../core/dartapi_db_core.dart';
 import '../core/db_result.dart';
+import 'db_page.dart';
 
 class _Condition {
   final String column;
@@ -24,7 +25,7 @@ class _Condition {
 /// final total = await db.query('users').where('role', equals: 'admin').count();
 /// ```
 class QueryBuilder {
-  final DartApiDB _db;
+  final QueryExecutor _db;
   final String _table;
   final DbParamStyle _style;
 
@@ -128,6 +129,47 @@ class QueryBuilder {
 
   /// Returns the first matching row, or `null` if none match.
   Future<Map<String, dynamic>?> first() async => (await get()).first;
+
+  /// Returns `true` when at least one row matches the current conditions.
+  Future<bool> exists() async {
+    final savedLimit = _limit;
+    final savedOffset = _offset;
+    _limit = 1;
+    _offset = null;
+    try {
+      return (await get()).isNotEmpty;
+    } finally {
+      _limit = savedLimit;
+      _offset = savedOffset;
+    }
+  }
+
+  /// Fetches one page of results **and** the total match count in a single
+  /// call — pagination happens in SQL (`LIMIT`/`OFFSET` + `COUNT(*)`).
+  ///
+  /// Add an [orderBy] to the builder for stable page boundaries.
+  ///
+  /// ```dart
+  /// final page = await db.query('users')
+  ///     .where('active', equals: true)
+  ///     .orderBy('id')
+  ///     .paginate(page: 2, limit: 20);
+  /// // page.rows, page.total, page.totalPages, page.hasNext, page.hasPrev
+  /// ```
+  Future<DbPage> paginate({int page = 1, int limit = 20}) async {
+    final safePage = page < 1 ? 1 : page;
+    final safeLimit = limit < 1 ? 1 : limit;
+    final total = await count();
+    _limit = safeLimit;
+    _offset = (safePage - 1) * safeLimit;
+    final result = await get();
+    return DbPage(
+      rows: result.rows,
+      total: total,
+      page: safePage,
+      limit: safeLimit,
+    );
+  }
 
   /// Returns the number of rows matching the current WHERE conditions.
   ///

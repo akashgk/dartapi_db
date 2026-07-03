@@ -13,6 +13,27 @@ enum DbParamStyle {
   positional,
 }
 
+/// Anything that can execute a parameterised SQL statement.
+///
+/// Implemented by both [DartApiDB] (pooled connections) and `DbTransaction`
+/// (inside `db.transaction(...)`), so the fluent query builder works in
+/// both contexts:
+///
+/// ```dart
+/// final page = await db.query('users').paginate(page: 1);       // pooled
+/// await db.transaction((tx) async {
+///   final user = await tx.query('users').where('id', equals: id).first();
+///   ...
+/// });
+/// ```
+abstract class QueryExecutor {
+  /// Executes a raw SQL statement with optional named [values].
+  Future<DbResult> rawQuery(String query, {Map<String, dynamic>? values});
+
+  /// The SQL parameter placeholder style used by this executor.
+  DbParamStyle get paramStyle;
+}
+
 /// The core interface for database access in DartAPI.
 ///
 /// This abstract class defines a common API for SQL database interactions,
@@ -21,7 +42,7 @@ enum DbParamStyle {
 ///
 /// The interface is designed to be simple and flexible, allowing developers to
 /// write database-agnostic code.
-abstract class DartApiDB {
+abstract class DartApiDB implements QueryExecutor {
   /// Establishes a connection to the database.
   ///
   /// This should be called before executing any queries.
@@ -34,6 +55,7 @@ abstract class DartApiDB {
   ///
   /// - [query]: The SQL query to execute.
   /// - [values]: Optional named parameters for substitution (e.g., `@name`).
+  @override
   Future<DbResult> rawQuery(String query, {Map<String, dynamic>? values});
 
   /// Inserts a new row into the specified [table].
@@ -45,7 +67,16 @@ abstract class DartApiDB {
   /// Retrieves data from the specified [table].
   ///
   /// - [where]: Optional filter conditions (e.g., `{'id': 1}`).
-  Future<DbResult> select(String table, {Map<String, dynamic>? where});
+  /// - [limit] / [offset]: SQL-side pagination.
+  ///
+  /// For sorting or richer filters use the fluent builder:
+  /// `db.query(table)...`.
+  Future<DbResult> select(
+    String table, {
+    Map<String, dynamic>? where,
+    int? limit,
+    int? offset,
+  });
 
   /// Updates one or more rows in the specified [table].
   ///
@@ -106,5 +137,6 @@ abstract class DartApiDB {
   /// The SQL parameter placeholder style used by this driver.
   ///
   /// Used internally by [QueryBuilder] to generate driver-compatible SQL.
+  @override
   DbParamStyle get paramStyle;
 }

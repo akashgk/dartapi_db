@@ -1,9 +1,28 @@
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../core/dartapi_db_core.dart';
+import '../../core/db_exception.dart';
 import '../../core/db_result.dart';
 import '../../core/db_transaction.dart';
 import '../../types/db_config.dart';
+
+/// Maps a raw sqlite3-package error onto the typed [DbException] hierarchy.
+///
+/// Extended result codes: 1555 = PRIMARY KEY, 2067 = UNIQUE, 787 = FOREIGN KEY.
+DbException _mapSqliteError(Object e) {
+  if (e is SqliteException) {
+    return switch (e.extendedResultCode) {
+      1555 || 2067 => UniqueViolationException(e.message, cause: e),
+      787 => ForeignKeyViolationException(e.message, cause: e),
+      _ => QueryException(e.message, cause: e),
+    };
+  }
+  if (e is StateError) {
+    // Thrown when the underlying Database has been closed.
+    return DbConnectionException(e.message, cause: e);
+  }
+  return QueryException('SQLite query failed', cause: e);
+}
 
 /// A SQLite implementation of [DartApiDB] using the `sqlite3` package.
 ///
@@ -63,12 +82,25 @@ class SqliteDatabase implements DartApiDB {
   }
 
   @override
-  Future<DbResult> select(String table, {Map<String, dynamic>? where}) async {
-    if (where == null || where.isEmpty) {
-      return _run(_db, 'SELECT * FROM $table;', null);
+  Future<DbResult> select(
+    String table, {
+    Map<String, dynamic>? where,
+    int? limit,
+    int? offset,
+  }) async {
+    var sql = 'SELECT * FROM $table';
+    if (where != null && where.isNotEmpty) {
+      final cond = where.keys.map((k) => '$k = ?').join(' AND ');
+      sql += ' WHERE $cond';
     }
-    final cond = where.keys.map((k) => '$k = ?').join(' AND ');
-    return _run(_db, 'SELECT * FROM $table WHERE $cond;', where);
+    if (limit != null) {
+      sql += ' LIMIT $limit';
+      if (offset != null) sql += ' OFFSET $offset';
+    } else if (offset != null) {
+      // SQLite requires LIMIT when OFFSET is present; -1 means unlimited.
+      sql += ' LIMIT -1 OFFSET $offset';
+    }
+    return _run(_db, '$sql;', where == null || where.isEmpty ? null : where);
   }
 
   @override
@@ -140,6 +172,9 @@ class SqliteDatabase implements DartApiDB {
 class _SqliteTxDB implements DbTransaction {
   final Database _db;
   _SqliteTxDB(this._db);
+
+  @override
+  DbParamStyle get paramStyle => DbParamStyle.positional;
 
   @override
   Future<DbResult> rawQuery(
@@ -225,19 +260,23 @@ DbResult _run(Database db, String query, Map<String, dynamic>? values) {
       trimmed.startsWith('PRAGMA') ||
       trimmed.startsWith('WITH');
 
-  if (isQuery) {
-    final result = db.select(query, params);
-    return DbResult(
-      rows: result.map((row) => _rowToMap(row, result.columnNames)).toList(),
-      affectedRows: result.length,
-    );
-  } else {
-    db.execute(query, params);
-    return DbResult(
-      rows: [],
-      affectedRows: db.updatedRows,
-      insertId: db.lastInsertRowId,
-    );
+  try {
+    if (isQuery) {
+      final result = db.select(query, params);
+      return DbResult(
+        rows: result.map((row) => _rowToMap(row, result.columnNames)).toList(),
+        affectedRows: result.length,
+      );
+    } else {
+      db.execute(query, params);
+      return DbResult(
+        rows: [],
+        affectedRows: db.updatedRows,
+        insertId: db.lastInsertRowId,
+      );
+    }
+  } catch (e) {
+    throw _mapSqliteError(e);
   }
 }
 

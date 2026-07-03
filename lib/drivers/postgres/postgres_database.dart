@@ -1,10 +1,37 @@
-import 'package:postgres/postgres.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:postgres/postgres.dart'
+    hide UniqueViolationException, ForeignKeyViolationException;
 import '../../core/dartapi_db_core.dart';
+import '../../core/db_exception.dart';
 import '../../core/db_result.dart';
 import '../../core/db_transaction.dart';
 import '../../core/sql_database.dart';
 import '../../core/sql_transaction.dart';
 import '../../types/pool_config.dart';
+
+/// Maps a raw postgres-package error onto the typed [DbException] hierarchy.
+DbException _mapPostgresError(Object e) {
+  if (e is ServerException) {
+    final code = e.code;
+    if (code == '23505') {
+      return UniqueViolationException(e.message, cause: e);
+    }
+    if (code == '23503') {
+      return ForeignKeyViolationException(e.message, cause: e);
+    }
+    if (code != null && code.startsWith('08')) {
+      return DbConnectionException(e.message, cause: e);
+    }
+    return QueryException(e.message, cause: e);
+  }
+  if (e is SocketException || e is TimeoutException) {
+    return DbConnectionException('Could not reach PostgreSQL', cause: e);
+  }
+  if (e is PgException) return QueryException(e.message, cause: e);
+  return QueryException('PostgreSQL query failed', cause: e);
+}
 
 /// A PostgreSQL implementation of [SqlDatabase] using a connection pool.
 ///
@@ -40,7 +67,7 @@ class PostgresDatabase extends SqlDatabase {
             _poolConfig.idleTimeout == Duration.zero
                 ? null
                 : _poolConfig.idleTimeout,
-        sslMode: SslMode.disable,
+        sslMode: config.useSsl ? SslMode.require : SslMode.disable,
       ),
     );
   }
@@ -65,8 +92,10 @@ class PostgresDatabase extends SqlDatabase {
         affectedRows: rows.length,
         executionTime: stopwatch.elapsed,
       );
+    } on DbException {
+      rethrow;
     } catch (e) {
-      throw Exception('PostgreSQL query failed: $e');
+      throw _mapPostgresError(e);
     }
   }
 
@@ -159,17 +188,23 @@ class _PostgresTxDB extends SqlTransaction {
     String query, {
     Map<String, dynamic>? values,
   }) async {
-    final stopwatch = Stopwatch()..start();
-    final result =
-        values != null && values.isNotEmpty
-            ? await _session.execute(Sql.named(query), parameters: values)
-            : await _session.execute(Sql(query));
-    final rows = result.map((row) => row.toColumnMap()).toList();
-    return DbResult(
-      rows: rows,
-      affectedRows: rows.length,
-      executionTime: stopwatch.elapsed,
-    );
+    try {
+      final stopwatch = Stopwatch()..start();
+      final result =
+          values != null && values.isNotEmpty
+              ? await _session.execute(Sql.named(query), parameters: values)
+              : await _session.execute(Sql(query));
+      final rows = result.map((row) => row.toColumnMap()).toList();
+      return DbResult(
+        rows: rows,
+        affectedRows: rows.length,
+        executionTime: stopwatch.elapsed,
+      );
+    } on DbException {
+      rethrow;
+    } catch (e) {
+      throw _mapPostgresError(e);
+    }
   }
 
   @override

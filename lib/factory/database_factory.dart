@@ -5,6 +5,7 @@ import 'package:dartapi_db/drivers/sqlite/sqlite_database.dart';
 import '../core/dartapi_db_core.dart';
 import '../types/db_config.dart';
 import '../types/db_type.dart';
+import '../types/pool_config.dart';
 
 /// A factory class responsible for instantiating the correct database driver
 /// based on the provided [DbConfig].
@@ -42,4 +43,17 @@ class DatabaseFactory {
     await db.connect();
     return db;
   }
+
+  /// Connects using a 12-factor database URL — pass `DATABASE_URL` straight
+  /// through:
+  ///
+  /// ```dart
+  /// final db = await DatabaseFactory.fromUrl(
+  ///   Platform.environment['DATABASE_URL']!,
+  /// );
+  /// ```
+  ///
+  /// See [DbConfig.fromUrl] for the supported formats.
+  static Future<DartApiDB> fromUrl(String url, {PoolConfig? poolConfig}) =>
+      create(DbConfig.fromUrl(url, poolConfig: poolConfig));
 }

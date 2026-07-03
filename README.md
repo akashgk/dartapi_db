@@ -8,7 +8,7 @@ A lightweight database abstraction layer for the [DartAPI](https://pub.dev/packa
 
 ```yaml
 dependencies:
-  dartapi_db: ^0.1.0
+  dartapi_db: ^0.2.0
 ```
 
 ---
@@ -25,9 +25,21 @@ dependencies:
 
 ## Connecting
 
+The one-liner — pass your platform's `DATABASE_URL` straight through
+(TLS via `?sslmode=require`, as required by Neon/Supabase/RDS/etc.):
+
 ```dart
 import 'package:dartapi_db/dartapi_db.dart';
 
+final db = await DatabaseFactory.fromUrl(Platform.environment['DATABASE_URL']!);
+// postgres://user:pass@host:5432/mydb?sslmode=require
+// mysql://root:secret@localhost/mydb
+// sqlite:app.db          sqlite::memory:
+```
+
+Or configure explicitly:
+
+```dart
 // PostgreSQL
 final db = await DatabaseFactory.create(DbConfig(
   type: DbType.postgres,
@@ -36,6 +48,7 @@ final db = await DatabaseFactory.create(DbConfig(
   database: 'mydb',
   username: 'postgres',
   password: 'secret',
+  useSsl: true,                             // managed/cloud databases
   poolConfig: PoolConfig(maxConnections: 10),
 ));
 
@@ -55,6 +68,30 @@ final db = await DatabaseFactory.create(DbConfig.sqlite('app.db'));
 // SQLite in-memory (useful for tests)
 final db = await DatabaseFactory.create(DbConfig.sqlite(':memory:'));
 ```
+
+---
+
+## Error Handling
+
+Every driver error surfaces as a typed `DbException` subclass — map them to
+HTTP statuses without parsing strings:
+
+| Exception | Meaning | Typical HTTP status |
+|---|---|---|
+| `UniqueViolationException` | duplicate key (e.g. email taken) | 409 |
+| `ForeignKeyViolationException` | missing/still-referenced row | 409 / 422 |
+| `DbConnectionException` | database unreachable | 503 |
+| `QueryException` | any other failed statement | 500 |
+
+```dart
+try {
+  await db.insert('users', {'email': dto.email, 'name': dto.name});
+} on UniqueViolationException {
+  throw const ApiException(409, 'Email already registered');
+}
+```
+
+The original driver exception is preserved in `.cause` for logging.
 
 ---
 
@@ -87,9 +124,40 @@ final result = await db.rawQuery(
 
 ---
 
+## Query Builder & Pagination
+
+```dart
+// Fluent filtering and sorting
+final admins = await db.query('users')
+    .where('role', equals: 'admin')
+    .where('age', greaterThan: 18)
+    .orderBy('name')
+    .get();
+
+// One call → one page of rows + the total count, all in SQL
+final page = await db.query('users')
+    .where('active', equals: true)
+    .orderBy('id')
+    .paginate(page: 2, limit: 20);
+// page.rows, page.total, page.totalPages, page.hasNext, page.hasPrev
+
+// Plugs straight into dartapi_core's PaginatedResponse:
+return PaginatedResponse(
+  data: page.map(User.fromRow),
+  pagination: Pagination(page: page.page, limit: page.limit),
+  total: page.total,
+);
+
+// Existence checks and counts
+final taken = await db.query('users').where('email', equals: email).exists();
+final total = await db.query('users').count();
+```
+
+---
+
 ## Transactions
 
-Wrap multiple operations in an atomic transaction. The callback commits on success and rolls back automatically on any exception.
+Wrap multiple operations in an atomic transaction. The callback commits on success and rolls back automatically on any exception. The query builder works inside transactions too (`tx.query(...)`).
 
 ```dart
 final orderId = await db.transaction((tx) async {
@@ -98,6 +166,9 @@ final orderId = await db.transaction((tx) async {
     'order_id': order.first!['id'],
     'sku': 'ABC-001',
   });
+  final items = await tx.query('order_items')
+      .where('order_id', equals: order.first!['id'])
+      .count();
   return order.first!['id'];
 });
 ```
