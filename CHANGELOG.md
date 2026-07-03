@@ -1,3 +1,9 @@
+## 0.1.1
+
+- Raise dependency floors to the current latest releases:
+  `postgres ^3.5.12`, `mysql_client_plus ^0.1.3`, `sqlite3 ^3.3.4`,
+  `test ^1.31.2`. No behaviour changes.
+
 ## 0.1.0
 
 **Health checks and a test suite that is green without a database.**
